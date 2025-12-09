@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - YourApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-full">
+    <div class="flex h-full">
+        {% include 'partials/sidebar.html' %}
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'partials/header.html' %}
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 sm:p-6">
+                <div class="max-w-2xl mx-auto">
+                    <div class="mb-6">
+                        <a href="{% url 'user_profile' pk=profile_user.pk %}" class="flex items-center text-slate-600 hover:text-slate-900 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Back to Profile
+                        </a>
+                    </div>
+
+                    <div class="bg-white shadow rounded-lg overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                            <h2 class="text-xl font-bold text-slate-800">Edit Profile Details</h2>
+                        </div>
+
+                        <form method="POST" class="p-6 space-y-6">
+                            {% csrf_token %}
+
+                            <div>
+                                <h3 class="text-lg font-medium leading-6 text-slate-900 mb-4 border-b pb-2">Personal Information</h3>
+                                <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                                    <div class="sm:col-span-3">
+                                        <label for="{{ u_form.first_name.id_for_label }}" class="block text-sm font-medium text-slate-700">First name</label>
+                                        <div class="mt-1">
+                                            {{ u_form.first_name }}
+                                            {% if u_form.first_name.errors %}
+                                                <p class="text-red-500 text-xs mt-1">{{ u_form.first_name.errors.0 }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="sm:col-span-3">
+                                        <label for="{{ u_form.last_name.id_for_label }}" class="block text-sm font-medium text-slate-700">Last name</label>
+                                        <div class="mt-1">
+                                            {{ u_form.last_name }}
+                                            {% if u_form.last_name.errors %}
+                                                <p class="text-red-500 text-xs mt-1">{{ u_form.last_name.errors.0 }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="sm:col-span-6 pt-4 border-t border-slate-200 mt-2">
+    <h4 class="text-base font-medium text-slate-900 mb-2">Password</h4>
+    <div class="flex items-center justify-between bg-slate-50 p-4 rounded-md border border-slate-200">
+        <div>
+            <p class="text-sm text-slate-700">Password is hidden for security.</p>
+            <p class="text-xs text-slate-500">To update your password, use the dedicated security page.</p>
+        </div>
+        {% if request.user == profile_user %}
+        <a href="{% url 'change_password' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Change Password
+        </a>
+        {% else %}
+             <span class="text-xs text-gray-400">Only the user can change their password.</span>
+        {% endif %}
+    </div>
+</div>
+
+                                    <div class="sm:col-span-6">
+                                        <label for="{{ u_form.email.id_for_label }}" class="block text-sm font-medium text-slate-700">Email address</label>
+                                        <div class="mt-1">
+                                            {{ u_form.email }}
+                                            <p class="mt-1 text-xs text-slate-500">Email cannot be changed directly.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-lg font-medium leading-6 text-slate-900 mb-4 border-b pb-2">Contact Details</h3>
+                                <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                                    <div class="sm:col-span-6">
+                                        <label for="{{ p_form.phone_number.id_for_label }}" class="block text-sm font-medium text-slate-700">Phone Number</label>
+                                        <div class="mt-1">
+                                            {{ p_form.phone_number }}
+                                            {% if p_form.phone_number.errors %}
+                                                <p class="text-red-500 text-xs mt-1">{{ p_form.phone_number.errors.0 }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="sm:col-span-6">
+                                        <label for="{{ p_form.address.id_for_label }}" class="block text-sm font-medium text-slate-700">Address</label>
+                                        <div class="mt-1">
+                                            {{ p_form.address }}
+                                            {% if p_form.address.errors %}
+                                                <p class="text-red-500 text-xs mt-1">{{ p_form.address.errors.0 }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-5 border-t border-slate-200">
+                                <div class="flex justify-end">
+                                    <a href="{% url 'user_profile' pk=profile_user.pk %}" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

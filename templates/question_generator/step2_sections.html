@@ -1,0 +1,176 @@
+<div id="step-2" class="step-transition step-hidden">
+  <h1 class="text-3xl font-bold mb-8 text-slate-800">Configure Assessment</h1>
+  <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+    <h3 class="text-lg font-semibold text-slate-800">Number of Questions</h3>
+    <p class="text-sm text-slate-500 mt-1 mb-6">
+      Set the question count for each section of the test.
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div
+        data-section="Coding"
+        class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+      >
+        <label class="font-medium text-slate-700"
+          >Coding <span class="text-red-500">*</span></label
+        >
+        <div
+          class="flex items-center border border-slate-300 rounded-lg bg-white w-fit mt-2 sm:mt-0"
+        >
+          <button
+            onclick="updateCount(this, -1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-l-lg transition-colors"
+          >
+            -
+          </button>
+          <input
+            type="number"
+            value="1"
+            class="w-16 text-center font-semibold text-lg text-[#736b8e] border-l border-r py-1.5 focus:outline-none bg-transparent"
+          />
+          <button
+            onclick="updateCount(this, 1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-r-lg transition-colors"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <div
+        data-section="Aptitude"
+        class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+      >
+        <label class="font-medium text-slate-700"
+          >Aptitude <span class="text-red-500">*</span></label
+        >
+        <div
+          class="flex items-center border border-slate-300 rounded-lg bg-white w-fit mt-2 sm:mt-0"
+        >
+          <button
+            onclick="updateCount(this, -1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-l-lg transition-colors"
+          >
+            -
+          </button>
+          <input
+            type="number"
+            value="1"
+            class="w-16 text-center font-semibold text-lg text-[#736b8e] border-l border-r py-1.5 focus:outline-none bg-transparent"
+          />
+          <button
+            onclick="updateCount(this, 1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-r-lg transition-colors"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <div
+        data-section="Quant"
+        class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+      >
+        <label class="font-medium text-slate-700"
+          >Quant <span class="text-red-500">*</span></label
+        >
+        <div
+          class="flex items-center border border-slate-300 rounded-lg bg-white w-fit mt-2 sm:mt-0"
+        >
+          <button
+            onclick="updateCount(this, -1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-l-lg transition-colors"
+          >
+            -
+          </button>
+          <input
+            type="number"
+            value="1"
+            class="w-16 text-center font-semibold text-lg text-[#736b8e] border-l border-r py-1.5 focus:outline-none bg-transparent"
+          />
+          <button
+            onclick="updateCount(this, 1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-r-lg transition-colors"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      <div
+        data-section="DSA"
+        class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+      >
+        <label class="font-medium text-slate-700"
+          >DSA <span class="text-red-500">*</span></label
+        >
+        <div
+          class="flex items-center border border-slate-300 rounded-lg bg-white w-fit mt-2 sm:mt-0"
+        >
+          <button
+            onclick="updateCount(this, -1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-l-lg transition-colors"
+          >
+            -
+          </button>
+          <input
+            type="number"
+            value="1"
+            class="w-16 text-center font-semibold text-lg text-[#736b8e] border-l border-r py-1.5 focus:outline-none bg-transparent"
+          />
+          <button
+            onclick="updateCount(this, 1)"
+            class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-r-lg transition-colors"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 border-t border-slate-200 pt-6">
+      <label
+        for="duration"
+        class="block text-sm font-medium text-slate-700 mb-1"
+        >Test Duration (in minutes) <span class="text-red-500">*</span></label
+      >
+      <div class="relative mt-1">
+        <div
+          class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <input
+          type="number"
+          id="duration"
+          placeholder="e.g., 60"
+          class="w-full md:w-1/2 pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#736b8e] focus:border-transparent transition"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-12 flex flex-col sm:flex-row w-full gap-4">
+    <button
+      onclick="prevStep()"
+      class="w-full sm:w-auto bg-slate-200 text-slate-800 font-semibold px-8 py-3 rounded-lg hover:bg-slate-300 transition-colors"
+    >
+      Back
+    </button>
+    <button
+      onclick="nextStep()"
+      class="w-full sm:w-auto bg-[#736b8e] text-white font-semibold px-8 py-3 rounded-lg hover:bg-[#5f5778] transition-colors shadow-md hover:shadow-lg"
+    >
+      Next
+    </button>
+  </div>
+</div>

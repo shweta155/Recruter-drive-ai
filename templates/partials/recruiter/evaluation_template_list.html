@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluation Templates List</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "theme-primary": "#736b8e",
+            "theme-dark": "#5f5778",
+            "theme-light": "#e5e3e9",
+            "gray-text": "#6B7280",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: "Inter", sans-serif; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-gray-800">
+  <div class="flex h-screen">
+    
+    {% include 'partials/sidebar.html' %}
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      
+      {% include 'partials/header.html' with page_title="Evaluation Master" %}
+
+      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6">
+        
+        <div class="container mx-auto">
+            
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-theme-dark">Evaluation Templates</h2>
+                <a href="{% url 'evaluation_template_create' %}" class="bg-theme-primary hover:bg-theme-dark text-white font-bold py-2 px-4 rounded shadow-md transition duration-200 flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Create New Template
+                </a>
+            </div>
+        
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-slate-200">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-4 border-b-2 border-slate-100 bg-slate-50 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                Template Name
+                            </th>
+                            <th class="px-6 py-4 border-b-2 border-slate-100 bg-slate-50 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                Cutoff Score
+                            </th>
+                            <th class="px-6 py-4 border-b-2 border-slate-100 bg-slate-50 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                Parameters (Weight)
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for template in templates %}
+                        <tr class="hover:bg-slate-50 transition duration-150">
+                            <td class="px-6 py-5 border-b border-slate-100 bg-white text-sm">
+                                <p class="text-gray-900 font-bold text-base">{{ template.name }}</p>
+                            </td>
+                            
+                            <td class="px-6 py-5 border-b border-slate-100 bg-white text-sm">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {{ template.cutoff_score }} Marks
+                                </span>
+                            </td>
+                            
+                            <td class="px-6 py-5 border-b border-slate-100 bg-white text-sm">
+                                <ul class="list-disc pl-4 space-y-1 text-gray-600">
+                                    {% for param in template.parameters.all %}
+                                        <li>
+                                            <span class="font-medium text-gray-800">{{ param.name }}</span> 
+                                            <span class="text-xs text-gray-500">({{ param.weight }})</span>
+                                        </li>
+                                    {% empty %}
+                                        <li class="text-gray-400 italic">No parameters defined</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-6 py-10 text-center text-gray-500">
+                                <div class="flex flex-col items-center justify-center">
+                                    <i class="fas fa-clipboard-list text-4xl text-gray-300 mb-3"></i>
+                                    <p class="text-lg font-medium">No templates found.</p>
+                                    <p class="text-sm">Get started by creating a new evaluation template.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-500">
+                Showing {{ templates|length }} templates
+            </div>
+
+        </div>
+
+      </main>
+      </div>
+  </div>
+</body>
+</html>

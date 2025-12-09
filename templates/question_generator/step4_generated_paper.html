@@ -1,0 +1,47 @@
+<div id="paper-container" class="max-w-4xl mx-auto hidden">
+  <div class="flex justify-between items-center mb-8">
+    <h1 id="paper-header" class="text-3xl font-bold text-slate-800"></h1>
+    <div>
+      <button
+        onclick="alert('Functionality to save the paper.')"
+        class="bg-[#736b8e] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#5f5778] transition-colors shadow-md hover:shadow-lg mr-2"
+      >
+        Save
+      </button>
+      <button
+        onclick="alert('Editing is not implemented in this demo.')"
+        class="bg-slate-200 text-slate-800 font-semibold px-6 py-2 rounded-lg hover:bg-slate-300 transition-colors"
+      >
+        Edit
+      </button>
+    </div>
+  </div>
+  <div
+    class="space-y-6 bg-white p-8 rounded-lg shadow-sm border border-slate-200 mb-8"
+  >
+    <div class="flex items-center">
+      <span class="w-32 font-semibold text-slate-600">Job Title:</span>
+      <span id="paper-jobTitle" class="text-slate-800"></span>
+    </div>
+    <div class="flex items-center">
+      <span class="w-32 font-semibold text-slate-600">Department:</span>
+      <span id="paper-department" class="text-slate-800"></span>
+    </div>
+    <div class="flex items-center">
+      <span class="w-32 font-semibold text-slate-600">Duration:</span>
+      <span id="paper-duration" class="text-slate-800"></span>
+    </div>
+    <div class="flex items-center">
+      <span class="w-32 font-semibold text-slate-600">Experience:</span>
+      <span id="paper-experience" class="text-slate-800"></span>
+    </div>
+    <div class="flex items-start">
+      <span class="w-32 font-semibold text-slate-600 mt-1">Skills:</span>
+      <div id="paper-skills" class="flex flex-wrap gap-2"></div>
+    </div>
+  </div>
+  <div>
+    <h2 class="text-2xl font-bold mb-4 text-slate-800">Questions:</h2>
+    <div class="space-y-6" id="paper-questions"></div>
+  </div>
+</div>

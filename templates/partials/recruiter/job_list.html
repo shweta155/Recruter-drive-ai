@@ -1,0 +1,473 @@
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .job-card.active-card {
+            border-color: #4f46e5;
+            background-color: #f5f3ff;
+        }
+        .overflow-y-auto {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f7fafc;
+        }
+        /* Toast Notification Styles */
+        #toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 9999;
+            font-size: 14px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div id="toast-notification">🔗 Link copied!</div>
+
+    <div class="flex h-screen overflow-hidden">
+        
+        {% include 'partials/sidebar.html' %} 
+        <div class="flex-1 flex flex-col overflow-hidden">
+            
+            {% include 'partials/header.html' with page_title="Jobs" %}
+            <main class="flex-1 flex overflow-hidden">
+                
+                <div id="job-list-container" class="w-full md:w-1/3 border-r bg-white overflow-y-auto flex flex-col">
+                    <div class="p-4 border-b">
+                        <h2 class="text-lg font-bold text-gray-800 mb-2">All Jobs</h2>
+                        <p class="text-sm text-gray-500">Click a job to view details on the right.</p>
+                        <div class="mt-3 flex space-x-2">
+                            <button class="px-3 py-1 text-xs sm:text-sm rounded-full bg-indigo-600 text-white hover:bg-indigo-700">All</button>
+                            <button class="px-3 py-1 text-xs sm:text-sm rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300">Active</button>
+                            <button class="px-3 py-1 text-xs sm:text-sm rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300">Closed</button>
+                        </div>
+                    </div>
+
+                    <div class="p-4 space-y-3 flex-1 overflow-y-auto">
+                        {% for job_item in jobs %} {% with active_job=job|default:jobs.first %}
+                            <a href="?page={{ page_obj.number }}&job_pk={{ job_item.pk }}" 
+                               class="job-card block p-4 border rounded-lg shadow-sm cursor-pointer transition duration-150 ease-in-out 
+                               {% if active_job.pk == job_item.pk %}active-card{% else %}border-gray-200 bg-white hover:bg-gray-50{% endif %}"
+                               data-job-id="{{ job_item.pk }}"
+                            >
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-semibold text-gray-900">{{ job_item.title }}</h3>
+                         <div class="relative inline-block group" onclick="event.preventDefault(); event.stopPropagation();">
+    <select 
+        onchange="updateStatusViaSidebar(event, {{ job_item.pk }}, this)"
+        class="appearance-none text-xs font-medium rounded-full py-0.5 pl-3 pr-7 cursor-pointer border-0 outline-none ring-0 focus:ring-0
+        {% if job_item.status == 'Open' or job_item.status == 'Active' %}bg-green-100 text-green-800{% elif job_item.status == 'Closed' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}"
+    >
+        <option value="Open" {% if job_item.status == 'Open' %}selected{% endif %}>Open</option>
+        <option value="Closed" {% if job_item.status == 'Closed' %}selected{% endif %}>Closed</option>
+        <option value="Archived" {% if job_item.status == 'Archived' %}selected{% endif %}>Archived</option>
+    </select>
+    
+    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-600">
+        <svg class="h-3 w-3 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+        </svg>
+    </div>
+</div>                           
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">{{ job_item.department }} - {{ job_item.location|default:"N/A" }}</p>
+                                <p class="text-xs text-gray-500 mt-1">Openings: {{ job_item.positions_available }}</p>
+                                <p class="text-xs text-gray-400 mt-1 text-right">{{ job_item.created_at|date:"d M Y" }}</p>
+                            </a>
+                            {% endwith %}
+                        {% empty %}
+                            <p class="text-center text-gray-500">No job posts found.</p>
+                        {% endfor %}
+                    </div>
+
+                    {% if is_paginated %}
+                    <div class="p-4 border-t bg-gray-50">
+                        <div class="flex justify-between items-center">
+                            
+                            {% if page_obj.has_previous %}
+                                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-sm border rounded bg-white hover:bg-gray-100 text-gray-700">
+                                    &laquo; Previous
+                                </a>
+                            {% else %}
+                                <button disabled class="px-3 py-1 text-sm border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                                    &laquo; Previous
+                                </button>
+                            {% endif %}
+
+                            <span class="text-xs text-gray-500">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-sm border rounded bg-white hover:bg-gray-100 text-gray-700">
+                                    Next &raquo;
+                                </a>
+                            {% else %}
+                                <button disabled class="px-3 py-1 text-sm border rounded bg-gray-100 text-gray-400 cursor-not-allowed">
+                                    Next &raquo;
+                                </button>
+                            {% endif %}
+                            
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="hidden md:block w-full md:w-2/3 p-6 overflow-y-auto bg-white border-l" id="job-detail-panel">
+                    
+                    <div id="empty-state-placeholder" class="h-full flex flex-col items-center justify-center text-center {% if job or jobs %}hidden{% endif %}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 text-gray-300 mb-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 2.622V12.75m-4.5-2.622a2.25 2.25 0 01-4.07 0m0 0a2.25 2.25 0 01-4.07 0m0 0a2.25 2.25 0 01-4.07 0m0 0A2.25 2.25 0 003.75 8.706v2.883c0 .858.6 1.625 1.432 1.833 2.656.656 5.484.656 8.14 0a1.875 1.875 0 001.432-1.833V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900">No Job Selected</h3>
+                        <p class="text-gray-500 mt-1">Select a job from the list on the left to view details.</p>
+                    </div>
+
+                    <div id="job-details-content" class="{% if not job and not jobs %}hidden{% endif %}">
+                        {% if job or jobs %}
+                        {% with current_job=job|default:jobs.first %} 
+                        
+                        <div class="flex justify-between items-start mb-2">
+                            <h2 class="text-2xl font-bold text-gray-900 break-words max-w-[70%]">{{ current_job.title }}</h2>
+                            <div class="flex space-x-2 mt-1">
+    {% if not current_job.is_expired and current_job.status != 'Closed' %}
+        <button id="copy-link-btn" 
+                data-application-link="{% if application_link %}{{ application_link }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% url 'job_application' slug=current_job.public_link_slug %}{% endif %}"
+                class="p-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition duration-150 relative group"
+                title="Copy Application Link">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+            </svg>
+            <span class="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-700 text-white text-xs rounded-lg whitespace-nowrap">
+                Copy Link
+            </span>
+        </button>
+    {% endif %}
+
+    {% if current_job.is_expired or current_job.status == 'Closed' %}
+        <button disabled class="px-3 py-2 text-sm bg-gray-300 text-gray-500 rounded-md cursor-not-allowed flex items-center space-x-1">
+            <span>Applications Closed</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+        </button>
+    {% else %}
+        <a href="{% if application_link %}{{ application_link }}{% else %}{% url 'job_application' slug=current_job.public_link_slug %}{% endif %}" 
+           target="_blank"
+           class="px-3 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-150 flex items-center space-x-1"
+           title="View Public Application Form">
+            <span>Apply</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+        </a>
+    {% endif %}
+</div>
+                            <!-- <div class="flex space-x-2 mt-1">
+                                <button id="copy-link-btn" 
+                                        data-application-link="{% if application_link %}{{ application_link }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% url 'job_application' slug=current_job.public_link_slug %}{% endif %}"
+                                        class="p-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition duration-150 relative group"
+                                        title="Copy Application Link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                                    </svg>
+                                    <span class="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-700 text-white text-xs rounded-lg whitespace-nowrap">
+                                        Copy Link
+                                    </span>
+                                </button>
+                                
+                                <a href="{% if application_link %}{{ application_link }}{% else %}{% url 'job_application' slug=current_job.public_link_slug %}{% endif %}" 
+                                   target="_blank"
+                                   class="px-3 py-2 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-150 flex items-center space-x-1"
+                                   title="View Public Application Form">
+                                    <span>Apply</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                    </svg>
+                                </a>
+                            </div> -->
+                        </div>
+                        <p class="text-sm text-gray-500 mb-2">{{ current_job.department }} - {{ current_job.location|default:"N/A" }}</p>
+                        
+                        <div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center border-b pb-4">
+                            <div class="p-3 bg-gray-100 rounded-lg">
+                                <p class="text-xl font-semibold text-gray-900">{{ current_job.positions_available }}</p>
+                                <p class="text-xs text-gray-500">Total Openings</p>
+                            </div>
+                            <div class="p-3 bg-gray-100 rounded-lg">
+<p class="text-xl font-semibold text-indigo-600">{{ current_job.total_candidates_count }}</p>                                <p class="text-xs text-gray-500">Total Candidates</p>
+                            </div>
+                            <div class="p-3 bg-gray-100 rounded-lg">
+<p class="text-xl font-semibold text-yellow-600">{{ current_job.in_progress_count }}</p>                                <p class="text-xs text-gray-500">In Progress</p>
+                            </div>
+                            <div class="p-3 bg-gray-100 rounded-lg">
+<p class="text-xl font-semibold text-green-600">{{ current_job.hired_count }}</p>                                <p class="text-xs text-gray-500">Hired</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-gray-500">Category</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.department }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Department</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.department }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Total Openings</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.positions_available }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Start Date</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.created_at|date:"D d M Y" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">End Date</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.end_date|date:"D d M Y"|default:"N/A" }}</p>
+                                </div>
+                               <div>
+    <p class="text-gray-500">Status</p>
+    <p id="detail-status-text" data-job-id="{{ current_job.pk }}" class="font-medium text-gray-900">
+        {{ current_job.get_status_display }}
+    </p>
+</div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-gray-500">Recruiter</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.created_by.get_full_name|default:current_job.created_by.username }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Job Type</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.get_job_type_display }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Work Experience</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.experience_min }} - {{ current_job.experience_max }} Years</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Salary Range</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.pay_scale|default:"N/A" }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Interview Rounds</p>
+                                    <p class="font-medium text-gray-900">{{ current_job.total_rounds }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-500">Rate</p>
+                                    <p class="font-medium text-gray-900">Per Month</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 border-t pt-6">
+                            <p class="text-gray-500 mb-2">Description</p>
+                            <div class="p-4 bg-gray-50 border border-gray-200 rounded-md text-gray-700 whitespace-pre-line">{{ current_job.description }}</div>
+                        </div>
+
+                        <div class="mt-6 flex flex-wrap gap-2 sm:gap-4 justify-end">
+                            <a href="{% url 'candidate_list' job_pk=current_job.pk %}" class="px-4 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-150">
+                                View Candidates
+                            </a>
+                            <a href="{% url 'job_edit' current_job.pk %}" class="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition duration-150 flex items-center justify-center">
+    Edit
+</a>
+<button type="button" onclick="confirmJobDelete()" class="px-4 py-2 text-sm border border-red-200 text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition duration-150">
+    Delete
+</button>
+
+<form id="delete-job-form" action="{% url 'job_delete' current_job.pk %}" method="post" style="display: none;">
+    {% csrf_token %}
+</form>
+                            <button type="button" id="close-detail-btn" class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-150">
+                                Close
+                            </button>
+                        </div>
+                        {% endwith %}
+                        {% endif %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // NEW FUNCTION: Delete Confirmation
+    function confirmJobDelete() {
+        if (confirm("Are you sure you want to DELETE this job? This action cannot be undone.")) {
+            const form = document.getElementById('delete-job-form');
+            if(form) {
+                form.submit();
+            }
+        }
+    }
+
+    // --- NEW FUNCTION: Update Status via Sidebar ---
+    function updateStatusViaSidebar(event, jobId, selectElement) {
+        // लिंक पर क्लिक होने से रोकें (क्योंकि यह <a> टैग के अंदर है)
+        event.preventDefault();
+        event.stopPropagation();
+
+        const newStatus = selectElement.value;
+        const url = "{% url 'update_job_status_ajax' %}";
+
+        // UI Feedback: Loading state (Optional)
+        const originalClass = selectElement.className;
+        selectElement.style.opacity = '0.5';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}' // Django CSRF Token
+            },
+            body: JSON.stringify({
+                'job_id': jobId,
+                'status': newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            selectElement.style.opacity = '1'; // Restore opacity
+
+            if (data.success) {
+                showToast(`✅ Status updated to ${newStatus}`);
+                
+                // Color Update Logic
+                // पुरानी क्लास हटाओ
+                selectElement.className = selectElement.className.replace(/bg-\w+-100 text-\w+-800/g, ''); 
+                
+                // नई क्लास जोड़ो
+                if (newStatus === 'Open' || newStatus === 'Active') {
+                    selectElement.classList.add('bg-green-100', 'text-green-800');
+                } else if (newStatus === 'Closed') {
+                    selectElement.classList.add('bg-red-100', 'text-red-800');
+                } else {
+                    selectElement.classList.add('bg-gray-100', 'text-gray-800');
+                }
+            } else {
+                showToast('❌ Update failed');
+                // Reset dropdown if failed (Reload page or handle logic)
+            }
+        })
+        .catch(error => {
+            selectElement.style.opacity = '1';
+            console.error('Error:', error);
+            showToast('❌ Error updating status');
+        });
+    }
+        document.addEventListener('DOMContentLoaded', function() {
+            const jobCards = document.querySelectorAll('.job-card');
+            const copyBtn = document.getElementById('copy-link-btn');
+            
+            // New variables for Close functionality
+            const closeBtn = document.getElementById('close-detail-btn');
+            const contentDiv = document.getElementById('job-details-content');
+            const placeholderDiv = document.getElementById('empty-state-placeholder');
+
+            // --- CLOSE BUTTON LOGIC ---
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    // 1. Details content ko chipa do (hide)
+                    if(contentDiv) contentDiv.classList.add('hidden');
+                    
+                    // 2. Placeholder text ko dikha do (show)
+                    if(placeholderDiv) placeholderDiv.classList.remove('hidden');
+
+                    // 3. Sidebar me jo active card highlight hai, use hata do
+                    jobCards.forEach(c => {
+                        c.classList.remove('active-card', 'bg-indigo-50', 'border-indigo-600');
+                        c.classList.add('border-gray-200', 'bg-white');
+                    });
+
+                    // (Optional) URL se query parameters hata sakte hain taki refresh par wapis open na ho
+                    const url = new URL(window.location);
+                    url.searchParams.delete('job_pk');
+                    window.history.pushState({}, '', url);
+                });
+            }
+
+            // Copy Link Functionality
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function(e) {
+                    e.preventDefault(); 
+                    const linkToCopy = this.getAttribute('data-application-link');
+                    
+                    navigator.clipboard.writeText(linkToCopy).then(() => {
+                        showToast('🔗 Application link copied to clipboard!');
+                    }).catch(err => {
+                        showToast('❌ Failed to copy link!');
+                        console.error('Failed to copy link: ', err);
+                    });
+                });
+            }
+
+            // Job Card Active Styling
+            jobCards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // जब किसी नई जॉब पर क्लिक हो, तो हम 'details' को वापस दिखा सकते हैं (optional, but good for UX)
+                    if(contentDiv) contentDiv.classList.remove('hidden');
+                    if(placeholderDiv) placeholderDiv.classList.add('hidden');
+
+                    jobCards.forEach(c => {
+                        c.classList.remove('active-card', 'bg-indigo-50', 'border-indigo-600');
+                        c.classList.add('border-gray-200', 'bg-white');
+                    });
+
+                    card.classList.add('active-card', 'bg-indigo-50');
+                    card.classList.remove('border-gray-200', 'bg-white');
+                });
+            });
+
+            // Set initial active card
+            const activeCard = document.querySelector('.job-card.active-card');
+            if (activeCard) {
+                activeCard.classList.add('active-card', 'bg-indigo-50');
+                activeCard.classList.remove('border-gray-200', 'bg-white');
+            } else if (jobCards.length > 0 && !document.querySelector('.active-card')) {
+                // अगर कोई जॉब selected नहीं है (शायद Close कर दिया हो), तो किसी को active न करें
+                if (!placeholderDiv || placeholderDiv.classList.contains('hidden')) {
+                     jobCards[0].classList.add('active-card', 'bg-indigo-50');
+                     jobCards[0].classList.remove('border-gray-200', 'bg-white');
+                }
+            }
+        });
+        
+        // Toast Notification Function
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            if (!toast) return;
+
+            toast.textContent = message;
+            toast.style.backgroundColor = message.includes('Failed') ? '#dc2626' : '#10b981';
+            toast.style.opacity = '1';
+            toast.style.pointerEvents = 'auto'; 
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.pointerEvents = 'none';
+            }, 3000);
+        }
+    </script>
+
+</body>
+</html>

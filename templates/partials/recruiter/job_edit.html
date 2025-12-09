@@ -1,0 +1,256 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Job | {{ object.title }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "theme-primary": "#736b8e",
+            "theme-dark": "#5f5778",
+            "theme-light": "#e5e3e9",
+            "gray-text": "#6B7280",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-gray-800">
+  <div class="flex h-screen overflow-hidden">
+    
+    {% include 'partials/sidebar.html' %}
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      
+      {% include 'partials/header.html' with page_title="Edit Job" %}
+
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        
+        <div class="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
+            
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Edit Job: {{ object.title }}</h2>
+                <a href="{% url 'job_list' %}" class="text-gray-500 hover:text-gray-700 transition">
+                    <i class="fas fa-times mr-1"></i> Cancel
+                </a>
+            </div>
+        
+            <form method="post">
+                {% csrf_token %}
+        
+                <h3 class="text-lg font-semibold text-theme-primary mb-4 flex items-center">
+                    <i class="fas fa-briefcase mr-2"></i> Job Details
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                        {{ form.title }}
+                        {{ form.title.errors }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                        {{ form.department }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        {{ form.location }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Type</label>
+                        {{ form.job_type }}
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Written Test Paper</label>
+                        {{ form.question_paper }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        {{ form.status }}
+                    </div>
+                </div>
+        
+                <h3 class="text-lg font-semibold text-theme-primary mb-4 mt-8 flex items-center">
+                    <i class="fas fa-list-ul mr-2"></i> Requirements
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Min Experience (Years)</label>
+                        {{ form.experience_min }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Max Experience (Years)</label>
+                        {{ form.experience_max }}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Skills Required</label>
+                        {{ form.skills_required }}
+                    </div>
+                </div>
+        
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Positions Available</label>
+                        {{ form.positions_available }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pay Scale</label>
+                        {{ form.pay_scale }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        {{ form.end_date }}
+                    </div>
+                </div>
+        
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    {{ form.description }}
+                </div>
+        
+                <h3 class="text-lg font-semibold text-theme-primary mb-4 mt-8 border-t pt-6 flex items-center">
+                    <i class="fas fa-users-cog mr-2"></i> Interview Rounds
+                </h3>
+                
+                {{ rounds_formset.management_form }}
+                
+                <div id="rounds-container" class="space-y-3">
+                    {% for round_form in rounds_formset %}
+                        <div class="round-row flex items-center space-x-3 bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm transition hover:shadow-md">
+                            {{ round_form.id }} 
+                            
+                            <div class="bg-white p-2 rounded-full border w-10 h-10 flex items-center justify-center text-theme-primary font-bold shadow-sm">
+                                <span class="round-number">{{ forloop.counter }}</span>
+                            </div>
+
+                            <div class="flex-1">
+                                {{ round_form.round_master }}
+                            </div>
+                            
+                            {% if rounds_formset.can_delete %}
+                                <div class="hidden">
+                                    {{ round_form.DELETE }}
+                                </div>
+                                <button type="button" class="delete-row-btn text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition" title="Remove Round">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <button type="button" id="add-round-btn" class="mt-4 inline-flex items-center text-sm text-theme-primary hover:text-theme-dark font-medium px-4 py-2 rounded-md hover:bg-gray-100 transition">
+                    <i class="fas fa-plus-circle mr-2"></i> Add Another Round
+                </button>
+        
+                <div class="mt-10 flex justify-end border-t pt-6">
+                    <a href="{% url 'job_list' %}" class="px-6 py-2 mr-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                        Cancel
+                    </a>
+                    <button type="button" onclick="this.form.submit()" class="px-6 py-2 bg-theme-primary text-white rounded-md hover:bg-theme-dark transition shadow-lg flex items-center">
+                        <i class="fas fa-save mr-2"></i> Update Job
+                    </button>
+                </div>
+            </form>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('rounds-container');
+        const addBtn = document.getElementById('add-round-btn');
+        const totalForms = document.getElementById('id_rounds-TOTAL_FORMS');
+    
+        // Update Row Numbers function
+        function updateRowNumbers() {
+            const rows = container.querySelectorAll('.round-row');
+            let count = 0;
+            rows.forEach((row) => {
+                // Only update visible rows
+                if (row.style.display !== 'none') {
+                    count++;
+                    row.querySelector('.round-number').textContent = count;
+                }
+            });
+        }
+    
+        // Add New Row
+        addBtn.addEventListener('click', function() {
+            const formCount = parseInt(totalForms.value);
+            const rows = container.querySelectorAll('.round-row');
+            
+            // Clone logic
+            let newRow = rows[rows.length - 1].cloneNode(true);
+            
+            // Clear inputs
+            const inputs = newRow.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.value = '';
+                const name = input.getAttribute('name').replace(`-${formCount-1}-`, `-${formCount}-`);
+                const id = input.getAttribute('id').replace(`-${formCount-1}-`, `-${formCount}-`);
+                input.setAttribute('name', name);
+                input.setAttribute('id', id);
+            });
+    
+            newRow.style.display = 'flex';
+            container.appendChild(newRow);
+            totalForms.value = formCount + 1;
+            
+            updateRowNumbers();
+            
+            // Re-attach delete event to the new row button
+            const newDeleteBtn = newRow.querySelector('.delete-row-btn');
+            attachDeleteEvent(newDeleteBtn);
+        });
+    
+        // Delete Row Logic
+        function attachDeleteEvent(btn) {
+            if(!btn) return;
+            btn.addEventListener('click', function() {
+                const row = this.closest('.round-row');
+                const deleteInput = row.querySelector('input[name$="-DELETE"]');
+                
+                if (deleteInput) {
+                    deleteInput.checked = true;
+                    row.style.display = 'none';
+                }
+                updateRowNumbers();
+            });
+        }
+    
+        // Initial attachment
+        document.querySelectorAll('.delete-row-btn').forEach(btn => attachDeleteEvent(btn));
+    });
+    </script>
+</body>
+</html>

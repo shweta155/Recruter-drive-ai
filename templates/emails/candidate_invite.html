@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Assessment Invitation</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    "
+  >
+    <div
+      style="
+        border-bottom: 2px solid #736b8e;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      "
+    >
+      <h1 style="color: #736b8e">Assessment Invitation</h1>
+    </div>
+
+    <p>Dear Candidate,</p>
+
+    <p>
+      You have been invited by {{ recruiter_name }} to take a technical
+      assessment for the position of <strong>{{ job_title }}</strong>.
+    </p>
+
+    <h2
+      style="
+        color: #5f5778;
+        margin-top: 30px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+      "
+    >
+      Assessment Details
+    </h2>
+    <ul style="list-style: none; padding-left: 0">
+      <li style="margin-bottom: 10px">
+        <strong>Test Title:</strong> {{ paper_title }}
+      </li>
+      <li style="margin-bottom: 10px">
+        <strong>Duration:</strong> {{ duration }} minutes
+      </li>
+      <li style="margin-bottom: 10px">
+        <strong>Total Questions:</strong> {{ total_questions }}
+      </li>
+      <li><strong>Key Skills:</strong> {{ skills_list|join:", " }}</li>
+    </ul>
+
+    <div style="text-align: center; margin: 30px 0">
+      <a
+        href="{{ test_link }}"
+        style="
+          background-color: #736b8e;
+          color: white;
+          padding: 12px 25px;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: bold;
+          display: inline-block;
+        "
+      >
+        Start Assessment Now
+      </a>
+    </div>
+
+    <p style="font-size: 0.9em; color: #666">
+      Please ensure you are ready to start before clicking the link, as the
+      timer begins immediately after registration.
+    </p>
+
+    <p style="margin-top: 30px">Best regards,</p>
+    <p>{{ recruiter_name }}</p>
+  </body>
+</html>

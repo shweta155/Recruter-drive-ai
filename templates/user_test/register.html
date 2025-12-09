@@ -1,0 +1,287 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register for Test | {{ paper_title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "theme-primary": "#736b8e",
+              "theme-dark": "#5f5778",
+              "theme-light": "#e5e3e9",
+              "gray-text": "#6B7280",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f7f7f7;
+      }
+      input:not([type="checkbox"]):not([type="radio"]),
+      textarea {
+        margin-top: 0.125rem;
+        display: block;
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        color: #374151;
+        font-size: 0.875rem;
+        outline: none;
+        transition: all 0.2s ease;
+      }
+      input[readonly] {
+        background-color: #f3f4f6;
+        color: #6b7280;
+        cursor: not-allowed;
+        border-color: #e5e7eb;
+      }
+      input[readonly]:focus {
+        border-color: #e5e7eb;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      }
+      input:not([readonly]):focus,
+      textarea:not([readonly]):focus {
+        border-color: #736b8e;
+        box-shadow: 0 0 0 3px rgba(115, 107, 142, 0.3);
+      }
+      input::placeholder {
+        color: #9ca3af;
+      }
+      .form-group {
+        margin-bottom: 0.75rem;
+      }
+      input.invalid,
+      textarea.invalid {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+      }
+      .error-text {
+        font-size: 0.75rem;
+        color: #ef4444;
+        margin-top: 0.25rem;
+      }
+    </style>
+  </head>
+  <body class="text-gray-800">
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div
+        class="w-full max-w-lg bg-white p-5 sm:p-7 rounded-xl shadow-lg border border-gray-100"
+      >
+        <h1 class="text-3xl font-extrabold text-theme-dark text-center mb-1">
+          Enter Your Details
+        </h1>
+        <h2 class="text-lg font-medium text-gray-600 text-center mb-5">
+          {{ paper_title }}
+        </h2>
+
+        {% if messages %}
+        <div class="mb-5 space-y-2">
+          {% for message in messages %}
+          <p
+            class="p-3 rounded-lg text-sm font-medium {% if message.tags == 'error' %} bg-red-100 text-red-700 border border-red-200 {% elif message.tags == 'success' %} bg-green-100 text-green-700 border border-green-200 {% else %} bg-blue-100 text-blue-700 border border-blue-200 {% endif %}"
+            role="alert"
+          >
+            {{ message }}
+          </p>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form
+          id="registerForm"
+          method="post"
+          action="{% url 'test:user_register_link' link_id=link_id %}"
+          novalidate
+          class="space-y-3"
+        >
+          {% csrf_token %} {% for field in form %}
+          <div class="form-group">
+            <label
+              for="{{ field.id_for_label }}"
+              class="block text-sm font-semibold text-gray-700 mb-0.5"
+            >
+              {{ field.label }} {% if field.field.required and field.name != 'phone_number' %}<span class="text-red-500">*</span>{% endif %}
+            </label>
+
+            {% if field.name == 'phone_number' %}
+            <input
+              type="tel"
+              name="{{ field.name }}"
+              id="{{ field.id_for_label }}"
+              pattern="[0-9]{10}"
+              title="Please enter a 10-digit phone number."
+              maxlength="10"
+              placeholder="Enter phone number"
+            />
+            {% else %} {{ field }} {% endif %} {% if field.errors %}
+            <div class="error-text">{{ field.errors }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          <button
+            type="submit"
+            class="w-full bg-theme-primary text-white font-semibold py-2.5 mt-5 rounded-lg hover:bg-theme-dark transition-colors text-lg shadow-md focus:outline-none focus:ring-4 focus:ring-theme-primary focus:ring-opacity-50"
+          >
+            Next
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function isNumberKey(evt) {
+        const charCode = evt.which ? evt.which : evt.keyCode;
+        if (charCode > 31 && (charCode < 48 || charCode > 57)) return false;
+        return true;
+      }
+
+      function isNameKey(evt) {
+        const charCode = evt.which ? evt.which : evt.keyCode;
+        if (
+          (charCode >= 65 && charCode <= 90) ||
+          (charCode >= 97 && charCode <= 122) ||
+          charCode === 32 ||
+          charCode < 32
+        ) {
+          return true;
+        }
+        return false;
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const emailFromUrl = urlParams.get("email");
+          if (emailFromUrl) {
+            const emailInput = document.getElementById("id_email");
+            if (emailInput) {
+              emailInput.value = emailFromUrl;
+              emailInput.setAttribute("readonly", true);
+
+              const label = document.querySelector('label[for="id_email"]');
+              if (label) {
+                const note = document.createElement("span");
+                note.textContent = " (from invitation)";
+                note.style.color = "#5f5778";
+                note.style.fontWeight = "normal";
+                label.appendChild(note);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Could not auto-fill email from URL.", e);
+        }
+
+        const form = document.getElementById("registerForm");
+        const inputs = form.querySelectorAll(
+          "input:not([type='checkbox']):not([type='radio']), textarea"
+        );
+
+        const nameInput = document.getElementById("id_name");
+        if (nameInput) {
+          nameInput.setAttribute("maxlength", "34");
+          nameInput.addEventListener("keypress", function (e) {
+            if (!isNameKey(e)) e.preventDefault();
+          });
+        }
+
+        const phoneInput = document.getElementById("id_phone_number");
+        if (phoneInput) {
+          phoneInput.addEventListener("keypress", function (e) {
+            if (!isNumberKey(e)) e.preventDefault();
+          });
+        }
+
+        form.addEventListener("submit", function (e) {
+          let isValid = true;
+
+          inputs.forEach((input) => {
+            if (input.hasAttribute("readonly")) return;
+
+            const errorEl = input.parentNode.querySelector(".error-text");
+            const value = input.value.trim();
+
+            if (errorEl) errorEl.remove();
+            input.classList.remove("invalid");
+
+            if (input.hasAttribute("required") && !value) {
+              isValid = false;
+              input.classList.add("invalid");
+              showError(input, "This field is required.");
+              return;
+            }
+
+            if (input.id === "id_name" && value) {
+              const minLength = 3;
+              const maxLength = 34;
+              const namePattern = /^[a-zA-Z\s]+$/;
+
+              if (value.length < minLength || value.length > maxLength) {
+                isValid = false;
+                input.classList.add("invalid");
+                showError(
+                  input,
+                  `Name must be between ${minLength} and ${maxLength} characters.`
+                );
+              } else if (!namePattern.test(value)) {
+                isValid = false;
+                input.classList.add("invalid");
+                showError(input, "Name can only contain letters and spaces.");
+              }
+            }
+
+            if (input.name === "phone_number" && value) {
+              if (!/^[0-9]{10}$/.test(value)) {
+                isValid = false;
+                input.classList.add("invalid");
+                showError(input, "Please enter a valid 10-digit phone number.");
+              }
+            }
+
+            if (input.type === "email" && value) {
+              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                isValid = false;
+                input.classList.add("invalid");
+                showError(
+                  input,
+                  "Please enter a valid email address (e.g., user@domain.com)."
+                );
+              }
+            }
+          });
+
+          if (!isValid) e.preventDefault();
+        });
+
+        function showError(input, message) {
+          const error = document.createElement("div");
+          error.className = "error-text";
+          error.textContent = message;
+          input.parentNode.appendChild(error);
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Confirm Deletion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+      <h1 class="text-2xl font-bold text-gray-800 mb-4">Confirm Deletion</h1>
+      <p class="text-gray-600 mb-6">
+        Are you sure you want to delete the user
+        <strong class="font-semibold"
+          >{{ user_to_delete.first_name }} {{ user_to_delete.last_name
+          }}</strong
+        >
+        ({{ user_to_delete.username }})?
+      </p>
+      <p class="text-red-600 font-semibold mb-6">
+        This action cannot be undone.
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-end space-x-4">
+          <a
+            href="{% url 'user_list' %}"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </a>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Yes, Delete User
+          </button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

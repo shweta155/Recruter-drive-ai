@@ -1,0 +1,2898 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-Powered Assessment Designer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    .step-transition {
+      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    }
+
+    .step-hidden {
+      display: none;
+    }
+
+    .step-hiding {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .step-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .question-toolbar {
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .question-active .question-toolbar {
+      opacity: 1;
+    }
+
+    .contextual-add-toolbar {
+      display: none;
+    }
+
+    .question-active .contextual-add-toolbar {
+      display: flex;
+    }
+
+    #toast-container {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.4s ease-in-out;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+   <style>
+/* ✅ CRITICAL FIX: Custom elements को block बनाएं */
+image-wrapper,
+code-block,
+code-content {
+    display: block !important; /* Force block display */
+}
+
+/* ✅ Image को visible और centered रखें */
+image-wrapper {
+    width: 100%;
+    max-width: 500px;
+    margin: 15px auto;
+    padding: 10px;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+image-wrapper img {
+    display: block !important;
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+/* Remove button styling */
+image-wrapper button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+/* Code block styling */
+code-block {
+    margin: 15px 0;
+    padding: 12px;
+    background-color: #1e293b;
+    border-radius: 8px;
+}
+
+code-content {
+    display: block !important;
+    color: #86efac;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+</style>
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 flex min-h-screen font-sans">
+  <div id="toast-container"></div>
+  {% include 'partials/sidebar.html' %}
+  <div class="flex-1 flex flex-col overflow-hidden">
+    {% include 'partials/header.html' with page_title="" %}
+    <main class="flex-1 p-6 md:p-10">
+      <div id="form-container" class="max-w-4xl mx-auto relative">
+        <div id="step-1" class="step-transition step-active bg-white p-8 rounded-xl shadow-lg max-w-4xl w-full">
+          <h1 class="text-3xl font-bold mb-8 text-slate-800">
+            Create Question Paper
+          </h1>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            <div>
+              <label for="jobTitle" class="block text-sm font-medium text-slate-700 mb-1">Job Title <span
+                  class="text-red-500">*</span></label>
+              <input type="text" id="jobTitle" placeholder="Enter Job Title"
+                class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#736b8e] focus:border-transparent transition"
+                minlength="3" />
+              <div id="jobTitleError" class="text-red-500 text-sm mt-2"></div>
+            </div>
+            <div>
+              <label for="department" class="block text-sm font-medium text-slate-700 mb-1">Department <span
+                  class="text-red-500">*</span></label>
+              <select id="department"
+                class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#736b8e] focus:border-transparent transition appearance-none">
+                <option value="" disabled selected>Select Department</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+              </select>
+              <div id="departmentError" class="text-red-500 text-sm mt-2"></div>
+            </div>
+            <div>
+    <label for="skills-input" class="block text-sm font-medium text-slate-700 mb-1">
+        Required Skills <span class="text-red-500">*</span>
+    </label>
+    <div class="relative" id="skills-wrapper">
+        <div id="skills-container"
+            class="w-full flex flex-wrap items-center gap-2 p-2 bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-[#736b8e] focus-within:border-transparent transition min-h-[46px]">
+            <input 
+                type="text" 
+                id="skills-input" 
+                placeholder="Type skill name (e.g., Python, React...)"
+                autocomplete="off"
+                class="flex-1 border-none focus:ring-0 outline-none p-1 placeholder-slate-400" />
+        </div>
+        <input type="hidden" id="skills-hidden-input" name="skills" />
+
+        <div id="skills-dropdown"
+            class="absolute z-10 mt-1 w-full bg-white border border-slate-300 rounded-lg shadow-lg max-h-80 overflow-hidden hidden">
+            
+            <div class="flex border-b bg-slate-50">
+                <button 
+                    type="button"
+                    class="skills-tab flex-1 px-4 py-2 text-sm font-medium text-slate-700 border-b-2 border-[#736b8e] bg-white transition" 
+                    data-tab="database">
+                    Database (Existing)
+                </button>
+                <button 
+                    type="button"
+                    class="skills-tab flex-1 px-4 py-2 text-sm font-medium text-slate-500 border-b-2 border-transparent hover:text-slate-700 transition" 
+                    data-tab="suggestions">
+                    AI Suggestions
+                </button>
+            </div>
+            
+            <div class="overflow-y-auto max-h-60">
+                <div id="skills-tab-database" class="skills-tab-content">
+                    <div class="p-3 text-sm text-slate-500 text-center">Type to search skills...</div>
+                </div>
+                
+                <div id="skills-tab-suggestions" class="skills-tab-content hidden">
+                    <div class="p-3 text-sm text-slate-500 text-center">No suggestions yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="skillsError" class="text-red-500 text-sm mt-2"></div>
+</div>
+
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Experience (Years) <span
+                  class="text-red-500">*</span></label>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1">Min</label>
+                  <div class="flex items-center border border-slate-300 rounded-lg bg-white">
+                    <button onclick="updateCount(this, -1)"
+                      class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-l-lg">
+                      -
+                    </button>
+                    <input type="number" id="minExp" value="0" min="0" readonly
+                      class="w-full text-center border-l border-r py-2 focus:outline-none placeholder-slate-400 cursor-default bg-slate-50" />
+                    <button onclick="updateCount(this, 1)"
+                      class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-r-lg">
+                      +
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1">Max</label>
+                  <div class="flex items-center border border-slate-300 rounded-lg bg-white">
+                    <button onclick="updateCount(this, -1)"
+                      class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-l-lg">
+                      -
+                    </button>
+                    <input type="number" id="maxExp" value="1" min="0" readonly
+                      class="w-full text-center border-l border-r py-2 focus:outline-none placeholder-slate-400 cursor-default bg-slate-50" />
+                    <button onclick="updateCount(this, 1)"
+                      class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-r-lg">
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div id="expError" class="text-red-500 text-sm mt-2"></div>
+            </div>
+          </div>
+
+          <div class="mt-12 flex justify-start">
+            <button id="nextButton" onclick="nextStep()"
+              class="w-full sm:w-auto bg-[#736b8e] text-white font-semibold px-8 py-3 rounded-lg hover:bg-[#5f5778] transition-colors shadow-md hover:shadow-lg">
+              Next
+            </button>
+          </div>
+        </div>
+        <div id="step-2" class="step-transition step-hidden">
+          <h1 class="text-3xl font-bold mb-8 text-slate-800">
+            Configure Assessment
+          </h1>
+          <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-800">
+              Number of Questions
+            </h3>
+            <p class="text-sm text-slate-500 mt-1 mb-6">
+              Set the question count for each section of the test.
+            </p>
+            <div id="sectionsError" class="text-red-500 text-sm -mt-4 mb-4 h-4"></div>
+            <div id="sections-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div class="mt-8 border-t border-slate-200 pt-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div>
+                  <label for="duration" class="block text-sm font-medium text-slate-700 mb-1">
+                    Test Duration
+                    <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative">
+                    <select id="duration"
+                      class="w-full px-3 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#736b8e] focus:border-transparent transition appearance-none">
+                      <option value="" disabled selected>
+                        Select duration
+                      </option>
+                      <option value="30">30 Minutes</option>
+                      <option value="45">45 Minutes</option>
+                      <option value="60">1 Hour</option>
+                      <option value="90">1 Hour 30 Minutes</option>
+                      <option value="120">2 Hours</option>
+                      <option value="150">2 Hours 30 Minutes</option>
+                      <option value="180">3 Hours</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                        aria-hidden="true">
+                        <path fill-rule="evenodd"
+                          d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                          clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div id="durationError" class="text-red-500 text-sm mt-2"></div>
+                </div>
+
+                <div>
+                  <label for="cutoffScore" class="block text-sm font-medium text-slate-700 mb-1">
+                    Cutoff Score
+                  </label>
+                  <div class="relative">
+                    <input type="number" id="cutoffScore" value="70" placeholder="e.g., 70"
+                      class="w-full px-3 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#736b8e] focus:border-transparent transition"
+                      oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500">
+                      %
+                    </div>
+                  </div>
+                  <div id="cutoffScoreError" class="text-red-500 text-sm mt-2"></div>
+                </div>
+              </div>
+            </div>
+           
+          </div>
+          <div class="mt-12 flex flex-col sm:flex-row w-full gap-4"></div>
+          <div class="mt-12 flex flex-col sm:flex-row w-full gap-4">
+            <button onclick="prevStep()"
+              class="w-full sm:w-auto bg-slate-200 text-slate-800 font-semibold px-8 py-3 rounded-lg hover:bg-slate-300 transition-colors">
+              Back
+            </button>
+            <button onclick="nextStep()"
+              class="w-full sm:w-auto bg-[#736b8e] text-white font-semibold px-8 py-3 rounded-lg hover:bg-[#5f5778] transition-colors shadow-md hover:shadow-lg">
+              Next
+            </button>
+          </div>
+        </div>
+        <div id="step-3" class="step-transition step-hidden">
+          <h1 class="text-3xl font-bold mb-8 text-slate-800">
+            Review & Generate
+          </h1>
+          <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
+              <div class="space-y-6">
+                <div>
+                  <h3 class="text-lg font-semibold text-slate-800">
+                    Role Details
+                  </h3>
+                  <p class="text-sm text-slate-500">
+                    Confirm the details for the position.
+                  </p>
+                </div>
+                <div class="space-y-4">
+                  <div class="flex justify-between items-baseline pb-2 border-b border-slate-100">
+                    <p class="text-sm font-medium text-slate-500">
+                      Job Title
+                    </p>
+                    <p id="review-jobTitle" class="font-semibold text-slate-800 text-base text-right"></p>
+                  </div>
+                  <div class="flex justify-between items-baseline pb-2 border-b border-slate-100">
+                    <p class="text-sm font-medium text-slate-500">
+                      Department
+                    </p>
+                    <p id="review-department" class="font-semibold text-slate-800 text-base text-right"></p>
+                  </div>
+                  <div class="flex justify-between items-baseline pb-2 border-b border-slate-100">
+                    <p class="text-sm font-medium text-slate-500">
+                      Experience
+                    </p>
+                    <p id="review-experience" class="font-semibold text-slate-800 text-base text-right"></p>
+                  </div>
+                  <div class="flex items-start">
+                    <p class="w-32 flex-shrink-0 text-sm font-medium text-slate-500">
+                      Required Skills
+                    </p>
+                    <div id="review-skills" class="flex flex-1 flex-wrap gap-2 justify-end"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-6 lg:border-l lg:pl-12 border-slate-200">
+                <div>
+                  <h3 class="text-lg font-semibold text-slate-800">
+                    Assessment Structure
+                  </h3>
+                  <p class="text-sm text-slate-500">
+                    A summary of the test format.
+                  </p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex justify-between items-center">
+                  <p class="text-sm font-medium text-slate-500">
+                    Test Duration
+                  </p>
+                  <p id="review-duration" class="font-semibold text-slate-800 text-lg text-right"></p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex justify-between items-center">
+                  <p class="text-sm font-medium text-slate-500">
+                    Cutoff Score
+                  </p>
+                  <p id="review-cutoff" class="font-semibold text-slate-800 text-lg text-right"></p>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-slate-500 mb-2">
+                    Sections
+                  </p>
+                  <div id="review-sections" class="space-y-2 border rounded-lg p-4"></div>
+                </div>
+                <div class="bg-[#736b8e] text-white p-4 rounded-lg flex justify-between items-center">
+                  <span class="font-semibold">Total Questions</span>
+                  <span id="review-total"
+                    class="text-xl font-bold bg-white text-[#736b8e] px-3 py-1 rounded-full"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-12 flex flex-col sm:flex-row w-full gap-4">
+            <button onclick="prevStep()"
+              class="w-full sm:w-auto bg-slate-200 text-slate-800 font-semibold px-8 py-3 rounded-lg hover:bg-slate-300 transition-colors">
+              Back
+            </button>
+            <button onclick="generatePaper()"
+              class="w-full sm:w-auto bg-[#736b8e] text-white font-semibold px-8 py-3 rounded-lg hover:bg-[#5f5778] transition-colors shadow-md hover:shadow-lg flex items-center justify-center">
+              Generate
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="paper-container" data-paper-id="{{ paper.id }}" class="max-w-4xl mx-auto hidden">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+          <h1 id="paper-header" class="text-2xl sm:text-3xl font-bold text-slate-800"></h1>
+          <div class="flex gap-2">
+            <button onclick="savePaper()"
+              class="flex-1 sm:flex-none bg-[#736b8e] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#5f5778] transition-colors shadow-md hover:shadow-lg">
+              Save
+            </button>
+          </div>
+        </div>
+        <div class="space-y-6 bg-white p-6 sm:p-8 rounded-lg shadow-sm border border-slate-200 mb-8">
+          <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200">
+            <h2 class="text-xl font-bold text-slate-800">Job Details</h2>
+            <button onclick="openEditModal()"
+              class="p-2 text-slate-500 rounded-full hover:bg-slate-100 hover:text-[#736b8e] transition-colors"
+              title="Edit Details">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                <path fill-rule="evenodd"
+                  d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                  clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <div class="flex flex-col sm:flex-row">
+            <span class="w-full sm:w-32 font-semibold text-slate-600 mb-1 sm:mb-0">Job Title:</span>
+            <span id="paper-jobTitle" class="text-slate-800"></span>
+          </div>
+          <div class="flex flex-col sm:flex-row">
+            <span class="w-full sm:w-32 font-semibold text-slate-600 mb-1 sm:mb-0">Department:</span>
+            <span id="paper-department" class="text-slate-800"></span>
+          </div>
+          <div class="flex flex-col sm:flex-row">
+            <span class="w-full sm:w-32 font-semibold text-slate-600 mb-1 sm:mb-0">Duration:</span>
+            <span id="paper-duration" class="text-slate-800"></span>
+          </div>
+          <div class="flex flex-col sm:flex-row">
+            <span class="w-full sm:w-32 font-semibold text-slate-600 mb-1 sm:mb-0">Experience:</span>
+            <span id="paper-experience" class="text-slate-800"></span>
+          </div>
+          <div class="flex flex-col sm:flex-row">
+            <span class="w-full sm:w-32 font-semibold text-slate-600 mb-1 sm:mb-0">Cutoff Score:</span>
+            <span id="paper-cutoffScore" class="text-slate-800"></span>
+          </div>
+          <div class="flex flex-col sm:flex-row">
+            <span class="w-full sm:w-32 font-semibold text-slate-600 mt-1 mb-1 sm:mb-0">Skills:</span>
+            <div id="paper-skills" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold mb-6 text-slate-800">Questions:</h2>
+          <div class="space-y-8" id="paper-questions"></div>
+
+          <div class="mt-10 pt-6 border-t border-slate-200 flex justify-end gap-2">
+            <button onclick="savePaper()"
+              class="flex-1 sm:flex-none bg-[#736b8e] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#5f5778] transition-colors shadow-md hover:shadow-lg">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="edit-modal"
+    class="fixed inset-0 bg-slate-900 bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+    <div id="edit-modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all">
+
+      <div class="flex justify-between items-center p-5 border-b border-slate-200">
+        <h3 class="text-xl font-bold text-slate-800">Edit Paper Details</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <div>
+          <label for="edit-jobTitle" class="block text-sm font-medium text-slate-700 mb-1">Job Title <span
+              class="text-red-500">*</span></label>
+          <input type="text" id="edit-jobTitle"
+            class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#736b8e] transition" />
+          <div id="edit-jobTitleError" class="text-red-500 text-sm mt-1"></div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Required Skills <span
+              class="text-red-500">*</span></label>
+          <div class="relative" id="edit-skills-wrapper">
+            <div id="edit-skills-container"
+              class="w-full flex flex-wrap items-center gap-2 p-2 bg-white border border-slate-300 rounded-lg min-h-[46px] focus-within:ring-2 focus-within:ring-[#736b8e]">
+              <input type="text" id="edit-skills-input" placeholder="Select skills..."
+                class="flex-1 border-none focus:ring-0 outline-none p-1" />
+            </div>
+            <div id="edit-skills-dropdown"
+              class="absolute z-20 mt-1 w-full bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+            </div>
+          </div>
+          <div id="edit-skillsError" class="text-red-500 text-sm mt-1"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="edit-duration" class="block text-sm font-medium text-slate-700 mb-1">Test Duration <span
+                class="text-red-500">*</span></label>
+            <div class="relative">
+              <select id="edit-duration"
+                class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#736b8e] transition appearance-none">
+                <option value="" disabled>Select duration</option>
+                <option value="30">30 Minutes</option>
+                <option value="45">45 Minutes</option>
+                <option value="60">1 Hour</option>
+                <option value="90">1 Hour 30 Minutes</option>
+                <option value="120">2 Hours</option>
+                <option value="150">2 Hours 30 Minutes</option>
+                <option value="180">3 Hours</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-700">
+                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
+            <div id="edit-durationError" class="text-red-500 text-sm mt-1"></div>
+          </div>
+
+          <div>
+            <label for="edit-cutoffScore" class="block text-sm font-medium text-slate-700 mb-1">
+              Cutoff Score
+            </label>
+            <div class="relative">
+              <input type="number" id="edit-cutoffScore" placeholder="e.g., 70"
+                class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#736b8e] transition"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500">
+                %
+              </div>
+            </div>
+            <div id="edit-cutoffScoreError" class="text-red-500 text-sm mt-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end items-center gap-4 p-5 bg-slate-50 rounded-b-xl">
+        <button onclick="closeEditModal()"
+          class="bg-slate-200 text-slate-800 font-semibold px-6 py-2.5 rounded-lg hover:bg-slate-300 transition-colors">
+          Cancel
+        </button>
+        <button id="save-changes-button"
+          class="bg-[#736b8e] text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-[#5f5778] transition-colors flex items-center">
+          Save Changes
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+  <div id="toast-notification"
+    class="fixed top-5 right-5 z-50 w-full max-w-xs p-4 text-gray-900 bg-white border border-gray-200 rounded-lg shadow-lg hidden transition-all duration-300 transform opacity-0 translate-y-2"
+    role="alert">
+    <div class="flex items-center">
+      <div id="toast-success-icon" class="hidden">
+        <div
+          class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+      </div>
+      <div id="toast-error-icon" class="hidden">
+        <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+      </div>
+      <div id="toast-message" class="ml-3 text-sm font-normal"></div>
+    </div>
+  </div>
+
+<script>
+    // --- START: DATA AND CONFIGURATION ---
+    const sectionCache = {};
+    let currentStep = 1;
+    // formData.sections now stores { sectionName: { count: N, weightage: W } }
+    let formData = { sections: {} };
+    let fullPaperPayload = {};
+    let allSkills = [];
+    let selectedSkills = [];
+    // --- NEW SKILLS COLLAPSE CONFIGURATION FOR REVIEW STEP ---
+    const MAX_DISPLAY_SKILLS = 1;
+    let isReviewSkillsExpanded = false;
+    // ---------------------------------------------------------
+
+    // --- NEW: Custom Editor Configuration ---
+    const MAX_CODE_BLOCKS = 3; // MAX code blocks allowed per question
+
+    function getCodeBlockCount(htmlContent) {
+        // Use a temporary div to reliably count custom elements
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        return tempDiv.querySelectorAll('code-block').length;
+    }
+
+    function focusEditor(element) {
+        if (element) {
+            element.focus();
+            // Cursor ko end mein le jane ke liye
+            const range = document.createRange();
+            const selection = window.getSelection();
+            if (element.childNodes.length > 0) {
+                 range.setStart(element, element.childNodes.length);
+            } else {
+                 range.setStart(element, 0);
+            }
+            range.collapse(true); // end
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+
+    // --- NEW: Image and Code Block functions ---
+async function insertImage(event, sectionIndex, questionIndex) {
+    const file = event.target.files[0];
+    // अगर कोई फाइल नहीं चुनी, तो वापस लौटें
+    if (!file) return;
+
+    // 1. साइज चेक (Max 2MB)
+    if (file.size > 2 * 1024 * 1024) { 
+        showToast("Image size must be less than 2MB.", "error");
+        // इनपुट को रिसेट करें ताकि वही फाइल दोबारा चुनने पर भी इवेंट फायर हो
+        event.target.value = ''; 
+        return;
+    }
+
+    // 2. प्रीव्यू के लिए अस्थाई URL बनाएं
+    const tempUrl = URL.createObjectURL(file);
+    const editor = document.getElementById(`editor-${sectionIndex}-${questionIndex}`);
+    
+    // एक यूनिक ID जनरेट करें ताकि हम इस स्पेसिफिक इमेज को बाद में ढूंढ सकें
+    const uniqueId = `img-${Date.now()}`;
+
+    // 3. एडिटर में तुरंत इमेज (Loading State के साथ) दिखाएं
+    // contenteditable="false" wrapper पर जरूरी है ताकि कर्सर अंदर न फंसे
+    const tempHtml = `
+    <image-wrapper id="${uniqueId}" contenteditable="false" class="block w-full max-w-sm my-3 mx-auto p-2 bg-slate-50 rounded-lg border border-slate-300 relative group opacity-60">
+        <div class="absolute inset-0 flex items-center justify-center z-10" id="${uniqueId}-loader">
+            <svg class="animate-spin h-8 w-8 text-[#736b8e]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <img src="${tempUrl}" alt="Uploading..." class="w-full h-auto object-contain rounded-md block" style="max-height: 200px;">
+    </image-wrapper><br>`; // <br> कर्सर को इमेज के बाद ले जाने में मदद करता है
+
+    // कर्सर जहां है, वहां HTML डालें
+    focusEditor(editor); // सुनिश्चित करें कि फोकस एडिटर पर है
+    document.execCommand('insertHTML', false, tempHtml);
+
+    // 4. फाइल को सर्वर पर भेजने के लिए तैयार करें
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const base64Image = e.target.result;
+
+        try {
+            const response = await fetch("/ajax/upload_image/", { // अपना सही URL चेक करें
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: JSON.stringify({ image_data: base64Image }),
+            });
+
+            const result = await response.json();
+
+            // अपलोड खत्म होने पर DOM में वो इमेज wrapper ढूंढें
+            const wrapper = document.getElementById(uniqueId);
+
+            if (result.status === "success" && wrapper) {
+                // A. इमेज का सोर्स बदलें (Local -> Server URL)
+                const imgTag = wrapper.querySelector('img');
+                if(imgTag) imgTag.src = result.url;
+
+                // B. लोडर हटाएं और Opacity ठीक करें
+                const loader = document.getElementById(`${uniqueId}-loader`);
+                if(loader) loader.remove();
+                wrapper.classList.remove('opacity-60', 'bg-slate-50');
+                wrapper.classList.add('bg-f8fafc'); // Default bg वापस लाएं
+
+                // C. डिलीट बटन जोड़ें (जो अपलोड के बाद ही दिखना चाहिए)
+                const deleteBtnHtml = `
+                <button onclick="removeImage(this, ${sectionIndex}, ${questionIndex})" class="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600" title="Remove Image">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>`;
+                wrapper.insertAdjacentHTML('beforeend', deleteBtnHtml);
+
+                // D. ID हटा दें (सफाई के लिए)
+                wrapper.removeAttribute('id');
+
+                // E. Payload अपडेट करें (ताकि सेव करने पर इमेज डेटाबेस में जाए)
+                fullPaperPayload.sections[sectionIndex].questions[questionIndex].text = editor.innerHTML;
+                
+                showToast("Image uploaded successfully!", "success");
+            } else {
+                throw new Error(result.message || "Upload failed");
+            }
+        } catch (error) {
+            console.error("Upload Error:", error);
+            showToast("Upload failed. Please try again.", "error");
+            
+            // अगर फेल हुआ, तो इमेज को एडिटर से हटा दें
+            const wrapper = document.getElementById(uniqueId);
+            if (wrapper) wrapper.remove();
+        }
+        
+        // इनपुट को खाली करें
+        event.target.value = '';
+    };
+
+    // फाइल को Base64 में पढ़ना शुरू करें
+    reader.readAsDataURL(file);
+}
+    function removeImage(button, sectionIndex, questionIndex) {
+        event.stopPropagation();
+        if (confirm("Are you sure you want to remove this image?")) {
+            const imageWrapper = button.closest('image-wrapper');
+            if (imageWrapper) {
+                imageWrapper.remove();
+                const editor = document.getElementById(`editor-${sectionIndex}-${questionIndex}`);
+                // Payload aur UI update karein
+                fullPaperPayload.sections[sectionIndex].questions[questionIndex].text = editor.innerHTML;
+            }
+            showToast("Image removed.", "success");
+        }
+    }
+
+    function insertCodeBlock(button, sectionIndex, questionIndex) {
+        event.stopPropagation();
+        const editor = document.getElementById(`editor-${sectionIndex}-${questionIndex}`);
+        const currentCount = getCodeBlockCount(editor.innerHTML);
+        
+        if (currentCount >= MAX_CODE_BLOCKS) {
+            showToast(`You can add a maximum of ${MAX_CODE_BLOCKS} code blocks per question.`, "error");
+            return;
+        }
+
+        // Code block HTML (contenteditable="true" is on a child span)
+        const codeHtml = `
+        <code-block contenteditable="false" class="block w-full my-3 p-3 bg-slate-800 text-green-300 font-mono text-sm rounded-md relative group">
+            <code-content contenteditable="true" class="block whitespace-pre-wrap outline-none p-1 bg-slate-700 rounded-sm" style="min-height: 20px;">// Write your code snippet here</code-content>
+            <button onclick="removeCodeBlock(this, ${sectionIndex}, ${questionIndex})" class="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title="Remove Code Block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </code-block><br>`;
+        
+        document.execCommand('insertHTML', false, codeHtml);
+        
+        // Payload aur UI update karein
+        fullPaperPayload.sections[sectionIndex].questions[questionIndex].text = editor.innerHTML;
+        updateCodeBlockButtonState(editor);
+        focusEditor(editor.querySelector('code-content:last-child'));
+    }
+
+    function removeCodeBlock(button, sectionIndex, questionIndex) {
+        event.stopPropagation();
+        if (confirm("Are you sure you want to remove this code block?")) {
+            const codeBlock = button.closest('code-block');
+            if (codeBlock) {
+                codeBlock.remove();
+                const editor = document.getElementById(`editor-${sectionIndex}-${questionIndex}`);
+                // Payload aur UI update karein
+                fullPaperPayload.sections[sectionIndex].questions[questionIndex].text = editor.innerHTML;
+                updateCodeBlockButtonState(editor);
+            }
+            showToast("Code block removed.", "success");
+        }
+    }
+
+    function updateCodeBlockButtonState(editor) {
+        const currentCount = getCodeBlockCount(editor.innerHTML);
+        // Extract sectionIndex and questionIndex from editor.id
+        const idParts = editor.id.split('-');
+        const sectionIndex = idParts[1];
+        const questionIndex = idParts[2];
+        const buttonId = `code-btn-${sectionIndex}-${questionIndex}`;
+        const button = document.getElementById(buttonId);
+
+        if (button) {
+            if (currentCount >= MAX_CODE_BLOCKS) {
+                button.disabled = true;
+                button.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+                button.classList.remove('hover:bg-slate-200');
+                button.title = `Code Block Limit Reached (${MAX_CODE_BLOCKS})`;
+            } else {
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-100');
+                button.classList.add('hover:bg-slate-200');
+                button.title = `Insert Code Block (Max ${MAX_CODE_BLOCKS})`;
+            }
+        }
+    }
+  
+function displayGeneratedPaper(paperData) {
+        document.getElementById("form-container").classList.add("hidden");
+        const paperContainer = document.getElementById("paper-container");
+        paperContainer.classList.remove("hidden");
+        document.getElementById("paper-header").textContent =
+            paperData.title || "Generated Question Paper";
+        
+        // Use fullPaperPayload for paper details (unchanged)
+        document.getElementById("paper-jobTitle").textContent =
+            fullPaperPayload.job_title || "N/A";
+        document.getElementById("paper-department").textContent =
+            fullPaperPayload.department || "N/A";
+        document.getElementById("paper-duration").textContent =
+            fullPaperPayload.durationText || "N/A";
+        document.getElementById(
+            "paper-experience"
+        ).textContent = `${fullPaperPayload.min_exp} - ${fullPaperPayload.max_exp} years`;
+        document.getElementById("paper-cutoffScore").textContent = `${fullPaperPayload.cutoff_score}%`;
+        const skillsContainer = document.getElementById("paper-skills");
+        skillsContainer.innerHTML = "";
+        if (fullPaperPayload.skills) {
+            fullPaperPayload.skills.split(",").forEach((skill) => {
+                if (skill.trim()) {
+                    const skillTag = document.createElement("span");
+                    skillTag.className =
+                        "bg-slate-200 text-slate-700 text-sm font-medium px-3 py-1 rounded-full";
+                    skillTag.textContent = skill.trim();
+                    skillsContainer.appendChild(skillTag);
+                }
+            });
+        }
+
+        const questionsContainer = document.getElementById("paper-questions");
+        questionsContainer.innerHTML = "";
+        let questionCounter = 1;
+        
+        if (Array.isArray(paperData.sections)) {
+            paperData.sections.forEach((section, sectionIndex) => {
+                if (!section) return;
+                const sectionTitle = document.createElement("h3");
+                sectionTitle.className =
+                    "text-xl font-bold text-slate-700 mb-4 pb-2 border-b-2 border-[#736b8e]";
+                sectionTitle.textContent = section.title || "Unnamed Section";
+                questionsContainer.appendChild(sectionTitle);
+                
+                if (Array.isArray(section.questions)) {
+                    section.questions.forEach((q, questionIndex) => {
+                        if (!q) return;
+                        
+                        let answerContentHTML = "";
+                        const isRequired = q.required || false;
+                        
+                        // --- 1. Generate Answer/Options/Code Content ---
+                        if (q.type === "MCQ" && Array.isArray(q.options)) {
+                            let optionsHTML = '<div class="mt-4 space-y-3">';
+                            q.options.forEach((option, optionIndex) => {
+                                const isCorrect = (option && option.trim()) === (q.answer && q.answer.trim());
+                                
+                                optionsHTML += `
+                                    <div class="flex items-center group">
+                                        <input type="radio" name="correct_answer_${sectionIndex}_${questionIndex}"
+                                                             id="radio_${sectionIndex}_${questionIndex}_${optionIndex}"
+                                                             class="form-radio h-4 w-4 text-[#736b8e] focus:ring-[#9a92b0] flex-shrink-0"
+                                                             onchange="setCorrectAnswer(${sectionIndex}, ${questionIndex}, ${optionIndex})"
+                                                             ${isCorrect ? "checked" : ""}>
+                                        <div class="ml-3 flex-grow p-1 outline-none border border-transparent focus-within:border-slate-300 rounded-md"
+                                                             contenteditable="true"
+                                                             oninput="updateMcqOption(event, ${sectionIndex}, ${questionIndex}, ${optionIndex})">${option}</div>
+                                        <button onclick="deleteMcqOption(${sectionIndex}, ${questionIndex}, ${optionIndex})"
+                                                             class="ml-2 p-1 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                             title="Delete Option">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </div>
+                                `;
+                            });
+                            answerContentHTML = optionsHTML + `</div>
+                                <div class="mt-4">
+                                    <button onclick="addMcqOption(${sectionIndex}, ${questionIndex})" class="text-sm font-medium text-[#736b8e] hover:text-[#5f5778]">
+                                        + Add Option
+                                    </button>
+                                </div>`;
+
+                        } else if (q.type === "Short Answer") {
+                            answerContentHTML = `
+                                <div class="mt-4 pt-3 border-t border-slate-100">
+                                    <p class="text-sm flex items-start">
+                                        <strong class="font-medium text-slate-500 mr-2 mt-1 flex-shrink-0">Answer:</strong>
+                                        <div class="flex-grow p-1 outline-none border border-transparent focus-within:border-slate-300 rounded-md bg-green-50 text-green-800 font-mono"
+                                                             contenteditable="true"
+                                                             oninput="updateShortAnswer(event, ${sectionIndex}, ${questionIndex})">${q.answer || ""
+                                                             }</div>
+                                    </p>
+                                </div>
+                            `;
+                        } else if (q.type === "CODE") {
+                            answerContentHTML = `
+                                <div class="mt-4 pt-3 border-t border-slate-100">
+                                    <p class="text-sm font-medium text-slate-500 mb-2">Expected Solution / Code Editor (Reference):</p>
+                                    <div class="flex-grow p-3 outline-none border border-slate-300 focus-within:border-[#736b8e] rounded-md bg-slate-800 text-green-300 font-mono text-sm whitespace-pre-wrap"
+                                                             contenteditable="true"
+                                                             style="min-height: 100px; tab-size: 4;"
+                                                             oninput="updateShortAnswer(event, ${sectionIndex}, ${questionIndex})">${q.answer || "// Write sample code solution here..."
+                                                             }</div>
+                                    <p class="text-xs text-slate-500 mt-2">Note: This box simulates the code editor/reference answer.</p>
+                                </div>
+                                `;
+                        } else { // Default/Fallback
+                            answerContentHTML = `<div class="mt-4 pt-3 border-t border-slate-100"><p class="text-sm"><strong class="font-medium text-slate-500">Answer:</strong> <span class="text-green-700 font-mono bg-green-50 p-1 rounded">${q.answer || "N/A"
+                                }</span></p></div>`;
+                        }
+
+                        // --- 2. Build the Question Block HTML ---
+
+                        const questionBlock = document.createElement("div");
+                        questionBlock.className =
+                            "question-block relative p-4 border border-slate-200 rounded-lg bg-white transition-all duration-200";
+
+                        const contextualAddToolbar = `
+                            <div class="contextual-add-toolbar absolute top-2 right-2 z-10 flex-col items-center gap-1 p-1.5 bg-white border border-slate-200 rounded-lg shadow-lg lg:top-1/2 lg:-translate-y-1/2 lg:left-full lg:right-auto lg:ml-4">
+                                <button onclick="addQuestionAfter(${sectionIndex}, ${questionIndex}, 'MCQ')" title="Add Multiple Choice" class="p-2 text-slate-500 hover:bg-[#736b8e] hover:text-white rounded-md transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </button>
+                                <button onclick="addQuestionAfter(${sectionIndex}, ${questionIndex}, 'Short Answer')" title="Add Short Answer" class="p-2 text-slate-500 hover:bg-[#736b8e] hover:text-white rounded-md transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+                                </button>
+                                <button onclick="addQuestionAfter(${sectionIndex}, ${questionIndex}, 'CODE')" title="Add Code Question" class="p-2 text-slate-500 hover:bg-[#736b8e] hover:text-white rounded-md transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                                </button>
+                            </div>
+                        `;
+                        
+                        questionBlock.innerHTML = `
+                            ${contextualAddToolbar}
+                            <div class="flex items-start">
+                                <span class="font-semibold text-slate-800 pt-1">${questionCounter}.</span>
+                                <div class="ml-2 w-full">
+                                    <div class="question-text-editor outline-none p-1 border border-transparent focus:border-slate-300 rounded-md"
+                                         id="editor-${sectionIndex}-${questionIndex}"
+                                         contenteditable="true">${q.text || "Question text not available."}</div>
+                                    
+                                    <div class="custom-toolbar hidden mt-2 py-1 flex flex-wrap items-center gap-1 border rounded-lg p-1 bg-slate-50 shadow-sm">
+                                        <button onclick="formatDoc('bold')" class="p-2 rounded-md hover:bg-slate-200 transition-colors" title="Bold"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg></button>
+                                        <button onclick="formatDoc('italic')" class="p-2 rounded-md hover:bg-slate-200 transition-colors" title="Italic"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" y2="20"></line></svg></button>
+                                        <button onclick="formatDoc('underline')" class="p-2 rounded-md hover:bg-slate-200 transition-colors" title="Underline"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg></button>
+                                        <div class="border-l h-6 border-slate-200 mx-1"></div>
+                                        
+                                        <label class="p-2 rounded-md hover:bg-slate-200 transition-colors cursor-pointer" title="Insert Image">
+                                            <input type="file" accept="image/*" class="hidden" onchange="insertImage(event, ${sectionIndex}, ${questionIndex})">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                        </label>
+                                        
+                                        <button 
+                                            class="p-2 rounded-md hover:bg-slate-200 transition-colors code-block-button" 
+                                            onclick="insertCodeBlock(this, ${sectionIndex}, ${questionIndex})" 
+                                            title="Insert Code Block (Max ${MAX_CODE_BLOCKS})"
+                                            id="code-btn-${sectionIndex}-${questionIndex}">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                        </button>
+                                    </div>
+                                    ${answerContentHTML} <div class="question-toolbar mt-4 pt-3 border-t border-slate-100 flex flex-wrap justify-center sm:justify-end items-center gap-x-4 gap-y-2 text-sm">
+                                        <button onclick="copyQuestion(${sectionIndex}, ${questionIndex})" title="Copy Question" class="p-2 text-slate-500 hover:text-[#736b8e] hover:bg-slate-100 rounded-full transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
+                                        <button onclick="deleteQuestion(${sectionIndex}, ${questionIndex})" title="Delete Question" class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                        <div class="border-l h-6 border-slate-200 hidden mx-2 hidden sm:block"></div>
+                                        <div class="flex items-center gap-2 hidden">
+                                            <span class="font-medium text-slate-600">Required</span>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" onchange="toggleRequired(this, ${sectionIndex}, ${questionIndex})" class="sr-only peer" ${isRequired ? "checked" : ""
+                                                }>
+                                                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-[#9a92b0] peer-checked:after:translate-x-full peer-checked:after:border-white after:content[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#736b8e]"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        
+                        questionsContainer.appendChild(questionBlock);
+                        
+                        // Event Listeners for the Question Block
+                        const editorDiv = questionBlock.querySelector(".question-text-editor");
+                        const customToolbar = questionBlock.querySelector(".custom-toolbar");
+
+                        editorDiv.addEventListener("focus", () => {
+                            document.querySelectorAll(".question-block").forEach((el) => {
+                                el.classList.remove(
+                                    "question-active",
+                                    "ring-2",
+                                    "ring-[#736b8e]"
+                                );
+                            });
+                            questionBlock.classList.add(
+                                "question-active",
+                                "ring-2",
+                                "ring-[#736b8e]"
+                            );
+                            customToolbar.classList.remove("hidden");
+                        });
+                        
+                        editorDiv.addEventListener("blur", (e) => {
+                             // If focus moves within the same block (e.g. to a toolbar button or code content), don't hide
+                            setTimeout(() => { // Small delay to check if focus moved to a child element
+                                if (!questionBlock.contains(document.activeElement)) {
+                                    customToolbar.classList.add("hidden");
+                                    questionBlock.classList.remove("ring-2", "ring-[#736b8e]");
+                                }
+                            }, 50);
+                        });
+
+                        editorDiv.addEventListener("input", (e) => {
+                            if (
+                                fullPaperPayload.sections[sectionIndex]?.questions[
+                                questionIndex
+                                ]
+                            ) {
+                                fullPaperPayload.sections[sectionIndex].questions[
+                                    questionIndex
+                                ].text = editorDiv.innerHTML;
+                            }
+                            updateCodeBlockButtonState(editorDiv);
+                            // NOTE: We are NOT saving the updated payload to session storage.
+                        });
+                        
+                        // Initial state check for code block button
+                        updateCodeBlockButtonState(editorDiv);
+
+                        questionCounter++;
+                    });
+                }
+            });
+        }
+    }
+    // Global Event Delegation for dynamic 'code-content' inputs
+    document.addEventListener('input', (e) => {
+        if (e.target.tagName === 'CODE-CONTENT') {
+            const editor = e.target.closest('.question-block')?.querySelector('.question-text-editor');
+            if (editor) {
+                const idParts = editor.id.split('-');
+                if (idParts.length === 3) {
+                    const sectionIndex = idParts[1];
+                    const questionIndex = idParts[2];
+                    if (fullPaperPayload.sections[sectionIndex]?.questions[questionIndex]) {
+                        // Update the main question text payload with the new HTML content
+                        fullPaperPayload.sections[sectionIndex].questions[questionIndex].text = editor.innerHTML;
+                    }
+                }
+            }
+        }
+    });
+
+    async function generatePaper() {
+        const generateButton = document.querySelector(
+            '#step-3 button[onclick="generatePaper()"]'
+        );
+        generateButton.disabled = true;
+        generateButton.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Generating...
+        `;
+        
+        // 🎯 AI POST DATA STRUCTURE: Send sections as objects containing count and weightage
+        const aiPostData = {
+            job_title: formData.jobTitle,
+            min_exp: formData.minExp,
+            max_exp: formData.maxExp,
+            skills: formData.skills,
+            sections: formData.sections, // This is already the correct format: {title: {count: N, weightage: W}}
+        };
+        
+        try {
+            const response = await fetch("{% url 'generate_questions' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: JSON.stringify(aiPostData),
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(
+                    `Server error: ${response.status} ${response.statusText}. Response: ${errorText}`
+                );
+            }
+            const paperData = await response.json();
+            if (paperData.error) {
+                throw new Error(paperData.error);
+            }
+            
+            // Populate fullPaperPayload (Local memory only)
+            // Combine AI-generated questions with saved form data (including weightage)
+            fullPaperPayload = {
+                job_title: formData.jobTitle,
+                department: formData.departmentName,
+                skills: formData.skills,
+                min_exp: formData.minExp,
+                max_exp: formData.maxExp,
+                duration: formData.duration,
+                durationText: formData.durationText,
+                cutoff_score: formData.cutoffScore,
+                title: paperData.title,
+                
+                // 🎯 CRITICAL: Merge AI's generated questions with the section weightage/data from formData
+                sections: paperData.sections.map(aiSection => {
+           // Find the corresponding section data (weightage) from the original formData
+           const originalData = formData.sections[aiSection.title] || {};
+           
+           // Return a LIST item, merging AI data (questions) and form data (weightage/count)
+           return {
+               title: aiSection.title,
+               questions: aiSection.questions,
+               count: originalData.count || 0,
+               weightage: originalData.weightage || 0 // Include weightage
+           };
+        }).filter(s => s.questions && s.questions.length > 0)
+        };
+            
+            // 1. Clear the preliminary draft (it's no longer a draft)
+            sessionStorage.removeItem("assessmentDraft");
+
+            // 2. Display the generated paper
+            displayGeneratedPaper(fullPaperPayload);
+            currentStep = 4; // Set to a new step to indicate 'Paper View'
+            showStep(currentStep);
+            
+            showToast("Paper generated successfully! Click 'Save' to finalize.", "success");
+
+        } catch (error) {
+            console.error("Failed to generate paper:", error);
+            showToast(`An error occurred: ${error.message}`, "error");
+        } finally {
+            generateButton.disabled = false;
+            generateButton.innerHTML = "Generate";
+        }
+    }
+    
+    // ... (rest of your existing functions like savePaper, loadFromSessionStorage, etc.) ...
+    
+    // --- NEW: SESSION STORAGE FUNCTIONS ---
+    function saveToSessionStorage() {
+        try {
+            // Save only the preliminary form data as 'assessmentDraft'
+            sessionStorage.setItem("assessmentDraft", JSON.stringify(formData));
+        } catch (e) {
+            console.warn("Could not save to Session Storage:", e);
+        }
+    }
+
+    function loadFromSessionStorage() {
+        try {
+            const draft = sessionStorage.getItem("assessmentDraft");
+            if (draft) {
+                const savedData = JSON.parse(draft);
+                
+                if (savedData.jobTitle) {
+                    formData = savedData;
+                    
+                    // --- Populate Step 1 UI ---
+                    document.getElementById("jobTitle").value = formData.jobTitle || "";
+                    document.getElementById("department").value = formData.departmentId || "";
+                    document.getElementById("minExp").value = formData.minExp || 0;
+                    document.getElementById("maxExp").value = formData.maxExp || 0;
+                    
+                    // Populate cutoffScore and duration for Step 2 (if available)
+                    if (document.getElementById("cutoffScore")) {
+                        document.getElementById("cutoffScore").value = formData.cutoffScore || 70;
+                    }
+                    if (document.getElementById("duration")) {
+                        document.getElementById("duration").value = formData.duration || "";
+                    }
+
+                    // Re-render skills tags
+                    if (formData.skills) {
+                        selectedSkills = formData.skills.split(",").map(s => s.trim()).filter(Boolean);
+                        renderTags();
+                        renderDropdown();
+                    }
+                    
+                    // Ensure sections are loaded/re-rendered on load if department is set
+                    if (formData.departmentId) {
+                         renderSections(formData.departmentId);
+                    }
+
+                    showToast("Draft loaded! You can resume your work.", "success");
+                }
+            }
+        } catch (e) {
+            console.error("Error loading draft from Session Storage:", e);
+            sessionStorage.removeItem("assessmentDraft");
+        }
+    }
+
+    // --- DOM CONTENT LOADED ---
+    document.addEventListener("DOMContentLoaded", function () {
+        fetchSkills();
+        loadFromSessionStorage(); // <-- Session Storage से डेटा लोड करें
+        initSkillsAutoSuggest();
+        const departmentDropdown = document.getElementById("department");
+        if (departmentDropdown) {
+            departmentDropdown.addEventListener("change", (event) => {
+                const departmentId = event.target.value;
+                if (departmentId) {
+                    renderSections(departmentId);
+                    collectStepData(1); // Save data on department change
+                    saveToSessionStorage(); 
+                }
+            });
+        }
+        
+        // Add input event listeners for immediate saving (Step 1 fields)
+        document.getElementById("jobTitle")?.addEventListener("input", () => {
+             collectStepData(1);
+             saveToSessionStorage();
+        });
+        document.getElementById("department")?.addEventListener("change", () => {
+             collectStepData(1);
+             saveToSessionStorage();
+        });
+
+        // Add input/change event listeners for Step 2 fields
+        document.getElementById("duration")?.addEventListener("change", () => {
+            collectStepData(2);
+            saveToSessionStorage();
+        });
+        document.getElementById("cutoffScore")?.addEventListener("input", () => {
+            collectStepData(2);
+            saveToSessionStorage();
+        });
+
+        const skillsContainer = document.getElementById("skills-container");
+        const skillsWrapper = document.getElementById("skills-wrapper");
+        const skillsDropdown = document.getElementById("skills-dropdown");
+        if (skillsContainer) {
+            skillsContainer.addEventListener("click", () => {
+                if (skillsDropdown) skillsDropdown.classList.remove("hidden");
+                document.getElementById("skills-input")?.focus();
+            });
+        }
+        document.addEventListener("click", (e) => {
+            if (skillsWrapper && !skillsWrapper.contains(e.target)) {
+                if (skillsDropdown) skillsDropdown.classList.add("hidden");
+            }
+        });
+
+        // Connect the save changes button in the modal
+        document.getElementById("save-changes-button").onclick = saveChanges;
+        
+        // Sidebar/Profile toggle code remains unchanged...
+        const sidebar = document.getElementById("sidebar");
+        const toggleButton = document.getElementById("sidebar-toggle");
+        const sidebarLogo = document.getElementById("sidebar-logo");
+        const sidebarTexts = document.querySelectorAll(".sidebar-text");
+        const sidebarHeader = document.getElementById("sidebar-header");
+        if (toggleButton) {
+            toggleButton.addEventListener("click", () => {
+                sidebar.classList.toggle("w-64");
+                sidebar.classList.toggle("w-20");
+                sidebarLogo.classList.toggle("hidden");
+                sidebarHeader.classList.toggle("justify-between");
+                sidebarHeader.classList.toggle("justify-center");
+                sidebarTexts.forEach((text) => {
+                    text.classList.toggle("hidden");
+                });
+            });
+        }
+        const userMenuButton = document.getElementById("user-menu-button");
+        const userMenu = document.getElementById("user-menu");
+        if (userMenuButton && userMenu) {
+            userMenuButton.addEventListener("click", (event) => {
+                userMenu.classList.toggle("hidden");
+                event.stopPropagation();
+            });
+            document.addEventListener("click", (event) => {
+                if (
+                    !userMenu.classList.contains("hidden") &&
+                    !userMenuButton.contains(event.target)
+                ) {
+                    userMenu.classList.add("hidden");
+                }
+            });
+        }
+    });
+
+    // --- SKILLS COMPONENT FUNCTIONS ---
+    async function fetchSkills() {
+        const skillsDropdown = document.getElementById("skills-dropdown");
+        try {
+            const response = await fetch("{% url 'get_skills_json' %}");
+            if (!response.ok) throw new Error("Failed to fetch skills.");
+            const data = await response.json();
+            allSkills = data.skills.map((skill) => skill.name);
+            renderDropdown();
+        } catch (error) {
+            console.error("Error fetching skills:", error);
+            if (skillsDropdown) {
+                skillsDropdown.innerHTML =
+                    '<div class="p-2 text-red-500">Could not load skills.</div>';
+            }
+        }
+    }
+
+    function renderDropdown() {
+        const skillsDropdown = document.getElementById("skills-dropdown");
+        if (!skillsDropdown) return;
+        skillsDropdown.innerHTML = "";
+        const availableSkills = allSkills.filter(
+            (skill) => !selectedSkills.includes(skill)
+        );
+        if (availableSkills.length === 0) {
+            skillsDropdown.innerHTML =
+                '<div class="p-3 text-sm text-slate-500">No more skills available.</div>';
+        } else {
+            availableSkills.forEach((skill) => {
+                const option = document.createElement("div");
+                option.textContent = skill;
+                option.className = "px-4 py-2 cursor-pointer hover:bg-slate-100";
+                option.addEventListener("click", () => selectSkill(skill));
+                skillsDropdown.appendChild(option);
+            });
+        }
+    }
+    function renderTags() {
+        const skillsContainer = document.getElementById("skills-container");
+        const skillsInput = document.getElementById("skills-input");
+        const skillsHiddenInput = document.getElementById(
+            "skills-hidden-input"
+        );
+        let skillSearchTimeout;
+
+        if (!skillsContainer || !skillsInput || !skillsHiddenInput) return;
+        document.querySelectorAll(".skill-tag").forEach((tag) => tag.remove());
+        selectedSkills.forEach((skill) => {
+            const tag = document.createElement("span");
+            tag.className =
+                "skill-tag flex items-center bg-[#736b8e] text-white text-sm font-medium pl-3 pr-2 py-1 rounded-full";
+            tag.innerHTML = `
+                ${skill}
+                <button type="button" class="ml-2 text-indigo-100 hover:text-white focus:outline-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                </button>
+            `;
+            tag.querySelector("button").addEventListener("click", (e) => {
+                e.stopPropagation();
+                deselectSkill(skill);
+                collectStepData(1); // Save changes to formData and storage
+                saveToSessionStorage();
+            });
+            skillsContainer.insertBefore(tag, skillsInput);
+        });
+        skillsHiddenInput.value = selectedSkills.join(",");
+        skillsInput.placeholder =
+            selectedSkills.length > 0 ? "" : "Select skills...";
+    }
+
+function initSkillsAutoSuggest() {
+    let skillSearchTimeout;
+    const skillsInput = document.getElementById("skills-input");
+    const skillsDropdown = document.getElementById("skills-dropdown");
+    const skillsWrapper = document.getElementById("skills-wrapper");
+
+    if (!skillsInput || !skillsDropdown) return;
+
+    skillsInput.addEventListener("input", (e) => {
+        clearTimeout(skillSearchTimeout);
+        const query = e.target.value.trim();
+        const aiProvider = document.body.dataset.aiProvider || 'gemini';
+
+        if (query.length < 1) {
+            skillsDropdown.classList.add("hidden");
+            return;
+        }
+
+        // ✅ STEP 1: Loader dikhayein (Jab tak response na aaye)
+        skillsDropdown.classList.remove("hidden");
+        skillsDropdown.innerHTML = `
+            <div class="p-4 flex items-center justify-center text-slate-500">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-[#736b8e]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-sm font-medium">Finding skills...</span>
+            </div>
+        `;
+
+        // ✅ STEP 2: API Call (300ms debounce ke baad)
+        skillSearchTimeout = setTimeout(async () => {
+            try {
+                const url = new URL(
+                    "{% url 'search_skills_suggestions' %}",
+                    window.location.origin
+                );
+                url.searchParams.append('q', query);
+                url.searchParams.append('provider', aiProvider);
+
+                const response = await fetch(url.toString());
+                if (!response.ok) throw new Error("Network response error");
+                const data = await response.json();
+
+                // Response aa gaya, ab loader hata dein
+                skillsDropdown.innerHTML = "";
+
+                const availableDbSkills = (data.skills || []).filter(s => !selectedSkills.includes(s));
+                const hasAiSuggestions = data.suggestions && data.suggestions.length > 0;
+
+                // ✅ CHANGE HERE: Agar koi result nahi hai, toh "No match" mat dikhao, bas hide kar do.
+                if (availableDbSkills.length === 0 && !hasAiSuggestions) {
+                    skillsDropdown.classList.add("hidden");
+                    return;
+                }
+
+                // Agar results hain, toh unhe render karein
+                
+                // 1. DB Skills
+                availableDbSkills.forEach(skill => {
+                    const option = document.createElement("div");
+                    option.className = "px-4 py-2 cursor-pointer hover:bg-slate-50 flex items-center transition-colors border-l-4 border-transparent hover:border-[#736b8e]";
+                    option.innerHTML = `<span class="w-2.5 h-2.5 bg-green-500 rounded-full mr-3"></span> <span class="text-slate-700">${skill}</span>`;
+                    option.addEventListener("click", () => selectSkill(skill));
+                    skillsDropdown.appendChild(option);
+                });
+
+                // 2. AI Suggestions
+                if (hasAiSuggestions) {
+                    if (availableDbSkills.length > 0) {
+                        const sep = document.createElement("div");
+                        sep.className = "border-t border-slate-100 my-1";
+                        skillsDropdown.appendChild(sep);
+                    }
+
+                    const aiHeader = document.createElement("div");
+                    const isGpt = aiProvider === 'chatgpt';
+                    aiHeader.className = `px-4 py-1.5 text-xs font-semibold uppercase tracking-wider ${isGpt ? 'text-purple-600 bg-purple-50' : 'text-blue-600 bg-blue-50'}`;
+                    aiHeader.innerHTML = isGpt ? '🤖 AI Suggestions' : '✨ AI Suggestions';
+                    skillsDropdown.appendChild(aiHeader);
+
+                    data.suggestions.forEach(skill => {
+                        if (selectedSkills.includes(skill)) return;
+                        const option = document.createElement("div");
+                        option.className = `px-4 py-2 cursor-pointer flex items-center transition-colors border-l-4 border-transparent ${isGpt ? 'hover:bg-purple-50 hover:border-purple-300' : 'hover:bg-blue-50 hover:border-blue-300'}`;
+                        option.innerHTML = `<span class="${isGpt ? 'text-purple-400' : 'text-blue-400'} mr-3">•</span> <span class="text-slate-700">${skill}</span>`;
+                        option.addEventListener("click", () => selectSkill(skill));
+                        skillsDropdown.appendChild(option);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Search error:", error);
+                // Error aane par bhi chupchap hide kar dein (या error दिखाना चाहें तो uncomment करें)
+                skillsDropdown.classList.add("hidden");
+                // skillsDropdown.innerHTML = '<div class="p-3 text-sm text-red-500 text-center">Error loading results.</div>';
+            }
+        }, 300);
+    });
+
+    document.addEventListener("click", (e) => {
+        if (skillsWrapper && !skillsWrapper.contains(e.target)) {
+            skillsDropdown.classList.add("hidden");
+        }
+    });
+
+    skillsInput.addEventListener("focus", () => {
+        if (skillsInput.value.trim().length >= 1) {
+            skillsDropdown.classList.remove("hidden");
+        }
+    });
+}
+
+// Call init once DOM is loaded
+document.addEventListener("DOMContentLoaded", initSkillsAutoSuggest);
+document.addEventListener("DOMContentLoaded", initSkillsAutoSuggest);
+initSkillsAutoSuggest();  
+
+    function selectSkill(skill) {
+        const skillsInput = document.getElementById("skills-input");
+        const skillsDropdown = document.getElementById("skills-dropdown");
+        if (!selectedSkills.includes(skill)) {
+            selectedSkills.push(skill);
+            renderTags();
+            renderDropdown();
+            collectStepData(1); // Save changes to formData and storage
+            saveToSessionStorage();
+        }
+        if (skillsInput) skillsInput.value = "";
+        if (skillsDropdown) skillsDropdown.classList.add("hidden");
+    }
+
+    function deselectSkill(skill) {
+        selectedSkills = selectedSkills.filter((s) => s !== skill);
+        renderTags();
+        renderDropdown();
+        collectStepData(1); // Save changes to formData and storage
+        saveToSessionStorage();
+    }
+
+    // --- FORM STATE AND NAVIGATION ---
+    function resetFormData() {
+        formData = { sections: {} };
+        selectedSkills = [];
+        renderTags();
+        renderDropdown();
+        sessionStorage.removeItem("assessmentDraft"); // Clear draft data
+        sessionStorage.removeItem("generatedPaper"); // Ensure cleanup, though it shouldn't exist
+    }
+
+    function showStep(step) {
+        document.querySelectorAll("[id^='step-']").forEach((el) => {
+            el.classList.add("step-hidden");
+            el.classList.remove("step-active");
+        });
+        const activeStep = document.getElementById(`step-${step}`);
+        const formContainer = document.getElementById("form-container");
+        const paperContainer = document.getElementById("paper-container");
+        
+        if (step === 4) { // Custom step for paper display
+            formContainer.classList.add("hidden");
+            paperContainer.classList.remove("hidden");
+        } else if (activeStep) {
+            paperContainer.classList.add("hidden");
+            formContainer.classList.remove("hidden");
+            setTimeout(() => {
+                activeStep.classList.remove("step-hidden");
+                activeStep.classList.add("step-active");
+            }, 50);
+        }
+    }
+
+    // 🎯 UPDATED: collectStepData to handle sections as objects {count, weightage}
+    function collectStepData(step) {
+        if (step === 1) {
+            formData.jobTitle = document.getElementById("jobTitle").value;
+            const deptSelect = document.getElementById("department");
+            formData.departmentId = deptSelect.value;
+            formData.departmentName =
+                deptSelect.selectedIndex > 0
+                    ? deptSelect.options[deptSelect.selectedIndex].text
+                    : "";
+            formData.skills = document.getElementById(
+                "skills-hidden-input"
+            ).value;
+            formData.minExp = document.getElementById("minExp").value;
+            formData.maxExp = document.getElementById("maxExp").value;
+        } else if (step === 2) {
+            // formData.sections should already be updated by updateSectionData.
+            // Only capture Duration and Cutoff Score here.
+            const durationSelect = document.getElementById("duration");
+            formData.duration = parseInt(durationSelect.value, 10) || 0;
+            formData.durationText =
+                durationSelect.selectedIndex > 0
+                    ? durationSelect.options[durationSelect.selectedIndex].text
+                    : "";
+            formData.cutoffScore = document.getElementById("cutoffScore").value;
+        }
+        // Save the collected data to session storage immediately
+        saveToSessionStorage();
+    }
+
+    // --- NEW HELPER FUNCTION: To update individual section data on input/change ---
+    function updateSectionData(inputElement) {
+        const sectionDiv = inputElement.closest("[data-section]");
+        if (!sectionDiv) return;
+
+        const sectionName = sectionDiv.dataset.section;
+        const countInput = sectionDiv.querySelector("input[data-field='count']");
+        const weightageInput = sectionDiv.querySelector("input[data-field='weightage']");
+
+        let count = parseInt(countInput.value, 10) || 0;
+        let weightage = parseInt(weightageInput.value, 10) || 0;
+
+        // Save as an object in formData.sections
+        formData.sections[sectionName] = {
+            count: count,
+            weightage: weightage
+        };
+
+        // Re-validate total weightage for immediate feedback
+        validateWeightageSum();
+
+        saveToSessionStorage();
+    }
+
+    // --- NEW HELPER FUNCTION: To validate total weightage ---
+    function validateWeightageSum() {
+        let totalWeightage = 0;
+        const sectionInputs = document.querySelectorAll("#step-2 [data-section]");
+        let isError = false;
+
+        if (sectionInputs.length === 0) return true; // No sections, no error
+
+        sectionInputs.forEach(div => {
+            const weightageInput = div.querySelector("input[data-field='weightage']");
+            const weightage = parseInt(weightageInput.value, 10) || 0;
+            totalWeightage += weightage;
+        });
+
+        const sectionsErrorDiv = document.getElementById("sectionsError");
+        if (totalWeightage !== 100) {
+            isError = true;
+            sectionsErrorDiv.textContent = `Total weightage is ${totalWeightage}%. It must equal 100% to proceed.`;
+        } else {
+            sectionsErrorDiv.textContent = "";
+        }
+        return !isError;
+    }
+
+
+    async function renderSections(departmentId) {
+        const container = document.getElementById("sections-container");
+        if (!container || !departmentId) {
+            if (container)
+                container.innerHTML =
+                    '<p class="text-slate-500 col-span-2">Please select a department.</p>';
+            return;
+        }
+        container.innerHTML =
+            '<p class="text-slate-500 col-span-2">Loading sections...</p>';
+        if (sectionCache[departmentId]) {
+            buildSectionsHTML(sectionCache[departmentId]);
+            return;
+        }
+        try {
+            const response = await fetch(
+                `/departments/${departmentId}/sections/`
+            );
+            if (!response.ok) throw new Error(`Failed to load sections.`);
+            const data = await response.json();
+            sectionCache[departmentId] = data.sections;
+            buildSectionsHTML(data.sections);
+        } catch (error) {
+            console.error("Error fetching sections:", error);
+            container.innerHTML = `<p class="text-red-500 col-span-2">Could not load sections.</p>`;
+        }
+    }
+
+    // 🎯 UPDATED: buildSectionsHTML to include Weightage input
+    function buildSectionsHTML(sections) {
+        const container = document.getElementById("sections-container");
+        container.innerHTML = "";
+        if (!sections || sections.length === 0) {
+            container.innerHTML =
+                '<p class="text-slate-500 col-span-2">No sections found for this department.</p>';
+            return;
+        }
+        
+        const numSections = sections.length;
+        // Calculate a default weightage for fair distribution
+        const defaultWeightage = numSections > 0 ? Math.floor(100 / numSections) : 0;
+        
+        sections.forEach((sectionName, index) => {
+            // Get existing count and weightage from formData or use defaults
+            const existingData = formData.sections[sectionName] || {};
+            const count = existingData.count !== undefined ? existingData.count : 1;
+            
+            let weightage;
+            if (existingData.weightage !== undefined) {
+                 weightage = existingData.weightage;
+            } else {
+                 // For the last section, adjust weightage to ensure sum is 100
+                 weightage = index === numSections - 1 
+                                 ? 100 - (defaultWeightage * (numSections - 1)) 
+                                 : defaultWeightage;
+            }
+
+            // Initialize/Update formData with default values if necessary
+            formData.sections[sectionName] = { count: count, weightage: weightage };
+
+            const sectionHTML = `
+                <div data-section="${sectionName}" class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <label class="font-medium text-slate-700 block mb-3">${sectionName}</label>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Question Count <span class="text-red-500">*</span></label>
+                            <div class="flex items-center border border-slate-300 rounded-lg bg-white w-full">
+                                <button onclick="updateCount(this, -1, 'count')" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-l-lg transition-colors">-</button>
+                                <input type="number" data-field="count" value="${count}" min="0" max="20" readonly 
+                                    class="w-full text-center font-semibold text-base text-[#736b8e] border-l border-r py-1.5 focus:outline-none bg-transparent cursor-default" />
+                                <button onclick="updateCount(this, 1, 'count')" class="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-r-lg transition-colors">+</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Weightage (%) <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                 <input type="number" data-field="weightage" value="${weightage}" min="0" max="100" 
+                                     class="w-full px-3 py-3 bg-white border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#736b8e] focus:border-transparent transition" 
+                                     oninput="this.value = this.value.replace(/[^0-9]/g, ''); updateSectionData(this);"
+                                     onchange="updateSectionData(this);" />
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500">
+                                    %
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            container.insertAdjacentHTML("beforeend", sectionHTML);
+        });
+        // Initial validation check for weightage sum on load
+        validateWeightageSum();
+    }
+// ✅ इस फंक्शन को अपने script में कहीं भी जोड़ दें
+function triggerImageUpload(sectionIndex, questionIndex) {
+    const inputId = `file-input-${sectionIndex}-${questionIndex}`;
+    const fileInput = document.getElementById(inputId);
+    
+    if (fileInput) {
+        fileInput.value = ''; // 🛠️ यह लाइन पुरानी वैल्यू को साफ करती है ताकि वही फाइल दोबारा सेलेक्ट हो सके
+        fileInput.click();    // अब इनपुट पर क्लिक करें
+    } else {
+        console.error("File input not found for ID:", inputId);
+    }
+}
+    function validateExperience() {
+        const minExpInput = document.getElementById("minExp");
+        const maxExpInput = document.getElementById("maxExp");
+        let minExp = parseInt(minExpInput.value, 10) || 0;
+        let maxExp = parseInt(maxExpInput.value, 10) || 0;
+        if (minExp > maxExp) {
+            maxExpInput.value = minExp;
+        }
+    }
+    function validateStep1() {
+        let isValid = true;
+        const jobTitleInput = document.getElementById("jobTitle");
+        const jobTitleError = document.getElementById("jobTitleError");
+        const departmentInput = document.getElementById("department");
+        const departmentError = document.getElementById("departmentError");
+        const skillsHiddenInput = document.getElementById(
+            "skills-hidden-input"
+        );
+        const skillsContainer = document.getElementById("skills-container");
+        const skillsError = document.getElementById("skillsError");
+        const minExpInput = document.getElementById("minExp");
+        const maxExpInput = document.getElementById("maxExp");
+        const expError = document.getElementById("expError");
+
+        jobTitleError.textContent = "";
+        jobTitleInput.classList.remove("border-red-500");
+        const jobTitleValue = jobTitleInput.value.trim();
+        const hasNumber = /\d/.test(jobTitleValue); // यह लाइन नंबर चेक करती है
+
+        if (!jobTitleValue) {
+            isValid = false;
+            jobTitleInput.classList.add("border-red-500");
+            jobTitleError.textContent = "This field is required.";
+        } else if (hasNumber) {
+            // नई जाँच
+            isValid = false;
+            jobTitleInput.classList.add("border-red-500");
+            jobTitleError.textContent = "Job Title cannot contain numbers.";
+        } else if (jobTitleValue.length < 3) {
+            isValid = false;
+            jobTitleInput.classList.add("border-red-500");
+            jobTitleError.textContent = "Must be at least 3 characters long.";
+        } else if (jobTitleValue.length > 30) {
+            isValid = false;
+            jobTitleInput.classList.add("border-red-500");
+            jobTitleError.textContent = "Cannot be more than 30 characters.";
+        }
+        departmentError.textContent = "";
+        departmentInput.classList.remove("border-red-500");
+        if (!departmentInput.value) {
+            isValid = false;
+            departmentInput.classList.add("border-red-500");
+            departmentError.textContent = "This field is required.";
+        }
+        skillsError.textContent = "";
+        if (skillsContainer) skillsContainer.classList.remove("border-red-500");
+        if (!skillsHiddenInput.value.trim()) {
+            isValid = false;
+            if (skillsContainer) skillsContainer.classList.add("border-red-500");
+            skillsError.textContent = "This field is required.";
+        }
+        expError.textContent = "";
+        const minExp = parseInt(minExpInput.value, 10);
+        const maxExp = parseInt(maxExpInput.value, 10);
+        if (minExp === 0 && maxExp === 0) {
+            isValid = false;
+            expError.textContent = "Please provide a valid experience range.";
+        }
+        validateExperience();
+        return isValid;
+    }
+    
+    // 🎯 UPDATED: validateStep2 to include weightage check
+    function validateStep2() {
+        let isValid = true;
+        let totalQuestions = 0;
+        const sectionsErrorDiv = document.getElementById("sectionsError");
+        
+        // 1. Check Total Questions and individual section validation
+        document.querySelectorAll("#step-2 [data-section]").forEach((div) => {
+            const count = parseInt(div.querySelector("input[data-field='count']").value, 10) || 0;
+            const weightageInput = div.querySelector("input[data-field='weightage']");
+            const weightage = parseInt(weightageInput.value, 10) || 0;
+
+            totalQuestions += count;
+            
+            // Basic individual input validation
+            if (count < 0 || count > 20) {
+                 isValid = false;
+                 sectionsErrorDiv.textContent = "Question count must be between 0 and 20 per section.";
+                 return;
+            }
+            if (weightage < 0 || weightage > 100) {
+                isValid = false;
+                sectionsErrorDiv.textContent = "Weightage must be between 0% and 100% per section.";
+                return;
+            }
+
+            // Highlight sections with count=0 but weightage>0
+            if (count === 0 && weightage > 0) {
+                div.classList.add("border-red-500"); // Visually alert the user
+                isValid = false;
+                sectionsErrorDiv.textContent = "A section with 0 questions cannot have weightage.";
+            } else {
+                div.classList.remove("border-red-500");
+            }
+        });
+
+        if (!isValid) return false;
+
+        // 2. Check Total Question Count
+        if (totalQuestions <= 0) {
+            isValid = false;
+            sectionsErrorDiv.textContent = "Please add at least one question.";
+        }
+        
+        // 3. Check Total Weightage Sum
+        if (!validateWeightageSum()) {
+            isValid = false;
+        }
+        
+        // 4. Duration Validation
+        const durationSelect = document.getElementById("duration");
+        const durationError = document.getElementById("durationError");
+        durationSelect.classList.remove("border-red-500");
+        if (durationError) durationError.textContent = "";
+        if (!durationSelect.value) {
+            isValid = false;
+            durationSelect.classList.add("border-red-500");
+            if (durationError)
+                durationError.textContent = "Please select a duration.";
+        }
+        
+        // 5. Cutoff Score Validation
+        const cutoffInput = document.getElementById("cutoffScore");
+        const cutoffError = document.getElementById("cutoffScoreError");
+        const cutoffValue = cutoffInput.value.trim();
+        cutoffError.textContent = "";
+        cutoffInput.classList.remove("border-red-500");
+
+        if (cutoffValue === "") {
+            isValid = false;
+            cutoffError.textContent = "This field is required.";
+            cutoffInput.classList.add("border-red-500");
+        } else {
+            const score = parseInt(cutoffValue, 10);
+            if (score < 0 || score > 100) {
+                isValid = false;
+                cutoffError.textContent = "Score must be between 0 and 100.";
+                cutoffInput.classList.add("border-red-500");
+            }
+        }
+
+        return isValid;
+    }
+
+
+    function nextStep() {
+        if (currentStep === 1 && !validateStep1()) return;
+        if (currentStep === 2 && !validateStep2()) return;
+        
+        collectStepData(currentStep); // Collects and saves to sessionStorage
+
+        if (currentStep < 3) {
+            currentStep++;
+            if (currentStep === 2) renderSections(formData.departmentId);
+            if (currentStep === 3) populateReview();
+            showStep(currentStep);
+        }
+    }
+
+    function prevStep() {
+        if (currentStep === 4) {
+             // NEW: Confirmation dialog for leaving generated paper view
+             const confirmLeave = confirm("⚠️ चेतावनी: जनरेट किए गए पेपर से वापस जाने पर, आपका यह पेपर (Questions, Title, आदि) **मिट जाएगा** और आपको इसे फिर से Generate करना होगा। क्या आप जारी रखना चाहते हैं?");
+
+             if (confirmLeave) {
+                 // Clear generated data and draft data
+                 sessionStorage.removeItem("generatedPaper"); // Ensure cleanup
+                 sessionStorage.removeItem("assessmentDraft");
+
+                 // Reset fullPaperPayload (local data)
+                 fullPaperPayload = {};
+                 
+                 // Reset currentStep to 3 (Review screen) and re-initialize UI
+                 currentStep = 3;
+                 
+                 // Re-collect data from form data (which may be partially lost if department changed without saving step 1 data) to show latest view
+                 collectStepData(currentStep-1); 
+                 populateReview(); 
+                 showStep(currentStep); 
+                 showToast("जनरेटेड पेपर **रद्द** कर दिया गया है। कृपया 'Generate' पर क्लिक करें।", "error");
+             }
+             return; // Stop further execution if on step 4
+        }
+        
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+            collectStepData(currentStep + 1); // Collects data from the step we are leaving and saves
+        }
+    }
+
+    // 🎯 UPDATED: updateCount to use updateSectionData for Step 2 counters
+    function updateCount(button, change, field) {
+        const input = button.parentElement.querySelector("input");
+        let currentValue = parseInt(input.value, 10) || 0;
+        let newValue = currentValue + change;
+        const isSectionCounter = button.closest("[data-section]");
+        
+        if (isSectionCounter) {
+            // Section Question Count (Max 20, Min 0)
+            const countInput = isSectionCounter.querySelector("input[data-field='count']");
+            if (input === countInput) {
+               newValue = Math.max(0, Math.min(newValue, 20));
+            } else {
+               // Must be minExp/maxExp, handle below
+               newValue = Math.max(0, newValue);
+            }
+        } else {
+            // Min/Max Experience
+            newValue = Math.max(0, newValue);
+        }
+        
+        input.value = newValue;
+        
+        if (input.id === "minExp" || input.id === "maxExp") {
+            validateExperience();
+            collectStepData(1); // Save Step 1 data
+        } else if (isSectionCounter) {
+            // Section Counter changed - use new dedicated function
+            updateSectionData(input);
+        }
+    }
+
+
+    // --- NEW FUNCTIONS FOR SKILL COLLAPSE IN STEP 3 ---
+    function toggleReviewSkills() {
+        isReviewSkillsExpanded = !isReviewSkillsExpanded;
+        renderReviewSkills();
+    }
+
+    function renderReviewSkills() {
+        const skillsContainer = document.getElementById("review-skills");
+        if (!skillsContainer) return;
+
+        skillsContainer.innerHTML = "";
+        if (!formData.skills) return;
+
+        const allSelectedSkills = formData.skills.split(",").map(s => s.trim()).filter(Boolean);
+        const totalCount = allSelectedSkills.length;
+        let skillsToRender = allSelectedSkills;
+        let remainingCount = 0;
+
+        if (!isReviewSkillsExpanded && totalCount > MAX_DISPLAY_SKILLS) {
+            skillsToRender = allSelectedSkills.slice(0, MAX_DISPLAY_SKILLS);
+            remainingCount = totalCount - MAX_DISPLAY_SKILLS;
+        }
+
+        // Render displayed skill tags
+        skillsToRender.forEach(skill => {
+            const skillTag = document.createElement("span");
+            skillTag.className = "bg-slate-200 text-slate-700 text-sm font-medium px-3 py-1 rounded-full";
+            skillTag.textContent = skill;
+            skillsContainer.appendChild(skillTag);
+        });
+
+        // Render the collapsible button
+        if (totalCount > MAX_DISPLAY_SKILLS) {
+            const button = document.createElement("button");
+            button.onclick = toggleReviewSkills;
+
+            if (!isReviewSkillsExpanded) {
+                // Collapsed view: Show +N more
+                button.className = 'text-sm font-medium px-3 py-1 rounded-full bg-[#736b8e] text-white hover:bg-[#5f5778] transition-colors shadow-md';
+                button.textContent = `+${remainingCount}`;
+            } else {
+                // Expanded view: Show Hide button
+                button.className = 'text-sm font-medium px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-300 transition-colors shadow-sm';
+                button.textContent = `Hide (-${totalCount - MAX_DISPLAY_SKILLS})`;
+            }
+            skillsContainer.appendChild(button);
+        }
+    }
+
+    // 🎯 UPDATED: populateReview to correctly display Section Count AND Weightage
+    function populateReview() {
+        document.getElementById("review-jobTitle").textContent =
+            formData.jobTitle || "N/A";
+        document.getElementById("review-department").textContent =
+            formData.departmentName || "N/A";
+        document.getElementById("review-duration").textContent =
+            formData.durationText || "N/A";
+        document.getElementById(
+            "review-experience"
+        ).textContent = `${formData.minExp} - ${formData.maxExp} years`;
+        document.getElementById(
+            "review-cutoff"
+        ).textContent = `${formData.cutoffScore}%`;
+        const skillsContainer = document.getElementById("review-skills");
+        skillsContainer.innerHTML = "";
+        // --- UPDATED SKILLS RENDERING: Call the new function for collapsed view ---
+        isReviewSkillsExpanded = false; // Reset to collapsed state by default
+        renderReviewSkills();
+        // --------------------------------------------------------------------------
+        const sectionsContainer = document.getElementById("review-sections");
+        sectionsContainer.innerHTML = "";
+        let totalQuestions = 0;
+        
+        // 🎯 NEW: Iterate over section objects in formData.sections
+        for (const section in formData.sections) {
+            const sectionData = formData.sections[section];
+            const count = sectionData.count || 0;
+            const weightage = sectionData.weightage || 0;
+            
+            totalQuestions += count;
+            sectionsContainer.innerHTML += `
+                <div class="flex justify-between items-center text-slate-700">
+                    <span>${section}</span>
+                    <span class="font-medium bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded-full">${count} Qs (${weightage}%)</span>
+                </div>`;
+        }
+        document.getElementById("review-total").textContent = totalQuestions;
+    }
+
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === name + "=") {
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function savePaper() {
+        const saveButtons = document.querySelectorAll(
+            'button[onclick^="savePaper"]'
+        );
+        saveButtons.forEach((button) => {
+            button.disabled = true;
+            button.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Saving...`;
+        });
+
+        try {
+            const response = await fetch("{% url 'save_paper' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: JSON.stringify(fullPaperPayload),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "Failed to save the paper.");
+            }
+            
+            // Clear Session Storage on successful save!
+            sessionStorage.removeItem("assessmentDraft");
+            sessionStorage.removeItem("generatedPaper"); // Ensure cleanup
+
+            showToast(result.message, "success");
+
+            setTimeout(() => {
+                resetFormData();
+                window.location.href = result.redirect_url;
+            }, 2000);
+        } catch (error) {
+            console.error("Save error:", error);
+            showToast(`Could not save the paper: ${error.message}`, "error");
+            saveButtons.forEach((button) => {
+                button.disabled = false;
+                button.textContent = "Save";
+            });
+        }
+    }
+
+    // --- EDIT MODAL SCRIPT (UNCHANGED logic related to skills/job title/duration/cutoff) ---
+    let editSelectedSkills = [];
+    let allEditSkills = [];
+
+    function openEditModal() {
+        document.getElementById("edit-jobTitle").value =
+            fullPaperPayload.job_title;
+        document.getElementById("edit-duration").value =
+            fullPaperPayload.duration;
+        document.getElementById("edit-cutoffScore").value =
+            fullPaperPayload.cutoff_score;
+        allEditSkills = [...allSkills];
+        editSelectedSkills = fullPaperPayload.skills
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        renderEditModalTags();
+        renderEditModalDropdown();
+        document.getElementById("edit-modal").classList.remove("hidden");
+    }
+
+    function closeEditModal() {
+        document.getElementById("edit-modal").classList.add("hidden");
+        document.getElementById("edit-jobTitleError").textContent = "";
+        document.getElementById("edit-skillsError").textContent = "";
+        document.getElementById("edit-durationError").textContent = "";
+        document
+            .getElementById("edit-jobTitle")
+            .classList.remove("border-red-500");
+        document.getElementById("edit-cutoffScore").classList.remove("border-red-500");
+        document
+            .getElementById("edit-skills-container")
+            .classList.remove("border-red-500");
+        document
+            .getElementById("edit-duration")
+            .classList.remove("border-red-500");
+        document.getElementById("edit-cutoffScore").value =
+            fullPaperPayload.cutoff_score;
+    }
+    function saveChanges() {
+        let isValid = true;
+        const newJobTitle = document
+            .getElementById("edit-jobTitle")
+            .value.trim();
+        const newDurationSelect = document.getElementById("edit-duration");
+        const newDurationValue = newDurationSelect.value;
+        const newDurationText =
+            newDurationSelect.options[newDurationSelect.selectedIndex].text;
+        const newCutoffScore = document.getElementById("edit-cutoffScore").value.trim();
+        // --- START: Error elements ko pehle se define kar lein ---
+        const editJobTitleInput = document.getElementById("edit-jobTitle");
+        const editJobTitleError = document.getElementById("edit-jobTitleError");
+        const editSkillsError = document.getElementById("edit-skillsError");
+        const editDurationError = document.getElementById("edit-durationError");
+        const editCutoffError = document.getElementById("edit-cutoffScoreError");
+        // --- END ---
+
+        // Pehle sabhi errors ko clear karein
+        editJobTitleError.textContent = "";
+        editSkillsError.textContent = "";
+        editDurationError.textContent = "";
+        editJobTitleInput.classList.remove("border-red-500");
+        editCutoffError.classList.remove("border-red-500");
+        document
+            .getElementById("edit-skills-container")
+            .classList.remove("border-red-500");
+        newDurationSelect.classList.remove("border-red-500");
+        document.getElementById("edit-cutoffScore").classList.remove("border-red-500");
+        // --- START: JOB TITLE VALIDATION BADLAV YAHAN HAI ---
+        const hasNumberInEdit = /\d/.test(newJobTitle); // Number check karne ke liye
+
+        if (!newJobTitle) {
+            editJobTitleError.textContent = "This field is required.";
+            editJobTitleInput.classList.add("border-red-500");
+            isValid = false;
+        } else if (hasNumberInEdit) {
+            // Check karein ki number to nahi hai
+            editJobTitleError.textContent = "Job Title cannot contain numbers.";
+            editJobTitleInput.classList.add("border-red-500");
+            isValid = false;
+        } else if (newJobTitle.length < 3) {
+            // Minimum length check
+            editJobTitleError.textContent = "Must be at least 3 characters long.";
+            editJobTitleInput.classList.add("border-red-500");
+            isValid = false;
+        } else if (newJobTitle.length > 30) {
+            // Maximum length check
+            editJobTitleError.textContent = "Cannot be more than 30 characters.";
+            editJobTitleInput.classList.add("border-red-500");
+            isValid = false;
+        }
+        // YEH VALIDATION BLOCK ADD KAREIN
+        if (newCutoffScore === "") {
+            editCutoffError.textContent = "This field is required.";
+            document.getElementById("edit-cutoffScore").classList.add("border-red-500");
+            isValid = false;
+        } else {
+            const score = parseInt(newCutoffScore, 10);
+            if (score < 0 || score > 100) {
+                editCutoffError.textContent = "Score must be between 0 and 100.";
+                document.getElementById("edit-cutoffScore").classList.add("border-red-500");
+                isValid = false;
+            }
+        }
+        // --- END: JOB TITLE VALIDATION ---
+
+        if (editSelectedSkills.length === 0) {
+            editSkillsError.textContent = "Please select at least one skill.";
+            document
+                .getElementById("edit-skills-container")
+                .classList.add("border-red-500");
+            isValid = false;
+        }
+        if (!newDurationValue) {
+            editDurationError.textContent = "This field is required.";
+            newDurationSelect.classList.add("border-red-500");
+            isValid = false;
+        }
+
+        if (!isValid) return;
+
+        fullPaperPayload.job_title = newJobTitle;
+        fullPaperPayload.duration = parseInt(newDurationValue, 10);
+        fullPaperPayload.skills = editSelectedSkills.join(",");
+        
+        // Update formData to keep it in sync for reviews
+        formData.jobTitle = newJobTitle;
+        formData.duration = parseInt(newDurationValue, 10);
+        formData.skills = editSelectedSkills.join(",");
+        formData.durationText = newDurationText;
+        fullPaperPayload.cutoff_score = parseInt(newCutoffScore, 10);
+        formData.cutoffScore = parseInt(newCutoffScore, 10);
+        
+        displayGeneratedPaper(fullPaperPayload);
+        closeEditModal();
+        showToast("Changes updated. Click 'Save' to finalize.", "success");
+        
+        // NOTE: We are NOT saving the updated payload to session storage.
+    }
+
+    function renderEditModalDropdown() {
+        const dropdown = document.getElementById("edit-skills-dropdown");
+        dropdown.innerHTML = "";
+        const available = allEditSkills.filter(
+            (s) => !editSelectedSkills.includes(s)
+        );
+        if (available.length === 0) {
+            dropdown.innerHTML = `<div class="p-3 text-sm text-slate-500">No more skills.</div>`;
+        } else {
+            available.forEach((skill) => {
+                const option = document.createElement("div");
+                option.textContent = skill;
+                option.className = "px-4 py-2 cursor-pointer hover:bg-slate-100";
+                option.addEventListener("click", () => selectEditModalSkill(skill));
+                dropdown.appendChild(option);
+            });
+        }
+    }
+
+    function renderEditModalTags() {
+        const container = document.getElementById("edit-skills-container");
+        const input = document.getElementById("edit-skills-input");
+        container.querySelectorAll(".skill-tag").forEach((tag) => tag.remove());
+        editSelectedSkills.forEach((skill) => {
+            const tag = document.createElement("span");
+            tag.className =
+                "skill-tag flex items-center bg-[#736b8e] text-white text-sm font-medium pl-3 pr-2 py-1 rounded-full";
+            tag.innerHTML = `${skill} <button type="button" class="ml-2 text-indigo-100 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></button>`;
+            tag.querySelector("button").addEventListener("click", (e) => {
+                e.stopPropagation();
+                deselectEditModalSkill(skill);
+            });
+            container.insertBefore(tag, input);
+        });
+        input.placeholder =
+            editSelectedSkills.length > 0 ? "" : "Select skills...";
+    }
+
+    function selectEditModalSkill(skill) {
+        if (!editSelectedSkills.includes(skill)) {
+            editSelectedSkills.push(skill);
+            renderEditModalTags();
+            renderEditModalDropdown();
+        }
+        document.getElementById("edit-skills-input").value = "";
+        document.getElementById("edit-skills-dropdown").classList.add("hidden");
+    }
+
+    function deselectEditModalSkill(skill) {
+        editSelectedSkills = editSelectedSkills.filter((s) => s !== skill);
+        renderEditModalTags();
+        renderEditModalDropdown();
+    }
+
+    document
+        .getElementById("edit-skills-container")
+        .addEventListener("click", () => {
+            document
+                .getElementById("edit-skills-dropdown")
+                .classList.remove("hidden");
+            document.getElementById("edit-skills-input").focus();
+        });
+    document.addEventListener("click", (e) => {
+        if (
+            !document.getElementById("edit-skills-wrapper").contains(e.target)
+        ) {
+            document
+                .getElementById("edit-skills-dropdown")
+                .classList.add("hidden");
+        }
+    });
+
+    // --- PAPER GENERATION AND EDITING SCRIPT ---
+
+    // **Toast Notification Function**
+    function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        const bgColor = type === "success" ? "bg-green-500" : "bg-red-500";
+        const icon =
+            type === "success"
+                ? '<i class="fas fa-check-circle"></i>'
+                : '<i class="fas fa-times-circle"></i>';
+        toast.className = `toast text-white text-sm font-semibold p-3 rounded-lg shadow-lg flex items-center space-x-3 ${bgColor}`;
+        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add("show"), 10);
+        setTimeout(() => {
+            toast.classList.remove("show");
+            toast.addEventListener("transitionend", () => toast.remove());
+        }, 3000);
+    }
+
+    function formatDoc(command, value = null) {
+        if (command) {
+            document.execCommand(command, false, value);
+        }
+    }
+
+    function updateMcqOption(event, sectionIndex, questionIndex, optionIndex) {
+        const question = fullPaperPayload.sections[sectionIndex]?.questions[questionIndex];
+        if (question) {
+            const newText = event.target.textContent.trim();
+            const oldText = question.options[optionIndex]; // पुराना टेक्स्ट सहेजें
+
+            // विकल्प अपडेट करें
+            question.options[optionIndex] = newText;
+
+            // CRITICAL FIX: अगर यही विकल्प पहले से 'सही उत्तर' चुना हुआ था, 
+            // तो 'answer' को भी नए टेक्स्ट से अपडेट करें।
+            if (question.answer && oldText.trim() === question.answer.trim()) {
+                question.answer = newText;
+            }
+            // अगर अभी तक कोई उत्तर सेट नहीं है, और यह पहला विकल्प है, तो इसे डिफॉल्ट बना दें
+            else if (!question.answer && optionIndex === 0) {
+                 question.answer = newText;
+            }
+        }
+    }
+
+    function setCorrectAnswer(sectionIndex, questionIndex, optionIndex) {
+        const question = fullPaperPayload.sections[sectionIndex].questions[questionIndex];
+        if (question) {
+            // चुने गए विकल्प का टेक्स्ट प्राप्त करें
+            const selectedOptionText = question.options[optionIndex] ? question.options[optionIndex].trim() : "";
+            
+            // उसे सही उत्तर के रूप में सेट करें
+            question.answer = selectedOptionText;
+            
+            // UI अपडेट करें ताकि रेडियो बटन सही दिखे
+            displayGeneratedPaper(fullPaperPayload);
+        }
+    }
+
+
+    function deleteMcqOption(sectionIndex, questionIndex, optionIndex) {
+        event.stopPropagation();
+        const question =
+            fullPaperPayload.sections[sectionIndex].questions[questionIndex];
+        if (question && question.options.length > 1) {
+            question.options.splice(optionIndex, 1);
+            if (!question.options.includes(question.answer)) {
+                question.answer = question.options[0];
+            }
+            displayGeneratedPaper(fullPaperPayload);
+            // NOTE: We are NOT saving the updated payload to session storage.
+        } else {
+            // **UPDATED: Using toast instead of alert**
+            showToast("Each question must have at least one option.", "error");
+        }
+    }
+
+    function addMcqOption(sectionIndex, questionIndex) {
+        event.stopPropagation();
+        const question = fullPaperPayload.sections[sectionIndex].questions[questionIndex];
+        if (question) {
+            question.options.push(""); // "New Option" की जगह खाली स्ट्रिंग ""
+            displayGeneratedPaper(fullPaperPayload);
+        }
+    }
+
+
+    function updateShortAnswer(event, sectionIndex, questionIndex) {
+        if (fullPaperPayload.sections[sectionIndex]?.questions[questionIndex]) {
+            fullPaperPayload.sections[sectionIndex].questions[
+                questionIndex
+            ].answer = event.target.textContent.trim(); // ✅ CORRECT
+        }
+    }
+    
+
+    function addQuestionAfter(sectionIndex, questionIndex, type) {
+        event.stopPropagation();
+        let newQuestionTemplate;
+        if (type === "MCQ") {
+            newQuestionTemplate = {
+                text: "<em>Write your new multiple choice question here...</em>",
+                type: "MCQ",
+                options: ["", ""], // पहले से खाली विकल्प
+                answer: "",          // उत्तर भी शुरू में खाली
+                required: false,
+            };
+        } else if (type === "Short Answer") {
+            newQuestionTemplate = {
+                text: "<em>Write your new short answer question here...</em>",
+                type: "Short Answer",
+                options: [],
+                answer: "Sample correct answer text.",
+                required: false,
+            };
+        } else if (type === "CODE") {
+            newQuestionTemplate = {
+                text: "<em>Write your new coding challenge prompt here...</em>",
+                type: "CODE",
+                options: [],
+                answer: "def solution(): \n    pass",
+                required: true,
+            };
+        } else {
+            console.error("Unknown question type:", type);
+            return;
+        }
+        fullPaperPayload.sections[sectionIndex].questions.splice(
+            questionIndex + 1,
+            0,
+            newQuestionTemplate
+        );
+        const targetEditorId = `editor-${sectionIndex}-${questionIndex + 1}`;
+        displayGeneratedPaper(fullPaperPayload);
+        // स्क्रॉल और फोकस के लिए पुराना कोड यहाँ रहेगा...
+        setTimeout(() => {
+           const newEditor = document.getElementById(targetEditorId);
+           if (newEditor) {
+               newEditor.closest(".question-block").scrollIntoView({ behavior: "smooth", block: "center" });
+               newEditor.focus();
+           }
+        }, 100);
+    }
+    function copyQuestion(sectionIndex, questionIndex) {
+        event.stopPropagation();
+        const questionToCopy =
+            fullPaperPayload.sections[sectionIndex].questions[questionIndex];
+        const newQuestion = JSON.parse(JSON.stringify(questionToCopy));
+        fullPaperPayload.sections[sectionIndex].questions.splice(
+            questionIndex + 1,
+            0,
+            newQuestion
+        );
+        displayGeneratedPaper(fullPaperPayload);
+        // NOTE: We are NOT saving the updated payload to session storage.
+    }
+
+    function deleteQuestion(sectionIndex, questionIndex) {
+        event.stopPropagation();
+        if (confirm("Are you sure you want to delete this question?")) {
+            fullPaperPayload.sections[sectionIndex].questions.splice(
+                questionIndex,
+                1
+            );
+            displayGeneratedPaper(fullPaperPayload);
+            // NOTE: We are NOT saving the updated payload to session storage.
+        }
+    }
+
+    function toggleRequired(checkbox, sectionIndex, questionIndex) {
+        event.stopPropagation();
+        const isChecked = checkbox.checked;
+        if (
+            fullPaperPayload.sections[sectionIndex] &&
+            fullPaperPayload.sections[sectionIndex].questions[questionIndex]
+        ) {
+            fullPaperPayload.sections[sectionIndex].questions[
+                questionIndex
+            ].required = isChecked;
+        }
+        // NOTE: We are NOT saving the updated payload to session storage.
+    }
+    // 2. updateMcqOption (Ensures clean text is saved to the options array)
+    function updateMcqOption(event, sectionIndex, questionIndex, optionIndex) {
+        if (fullPaperPayload.sections[sectionIndex]?.questions[questionIndex]) {
+            // contenteditable से आने वाले टेक्स्ट को TRIM करके options array में सेव करें
+            fullPaperPayload.sections[sectionIndex].questions[
+                questionIndex
+            ].options[optionIndex] = event.target.textContent.trim();
+        }
+    }
+
+    // --- Main Rendering Logic (Replaced) ---
+    function displayGeneratedPaper(paperData) {
+        document.getElementById("form-container").classList.add("hidden");
+        const paperContainer = document.getElementById("paper-container");
+        paperContainer.classList.remove("hidden");
+        document.getElementById("paper-header").textContent =
+            paperData.title || "Generated Question Paper";
+        
+        // Use fullPaperPayload for paper details
+        document.getElementById("paper-jobTitle").textContent =
+            fullPaperPayload.job_title || "N/A";
+        document.getElementById("paper-department").textContent =
+            fullPaperPayload.department || "N/A";
+        document.getElementById("paper-duration").textContent =
+            fullPaperPayload.durationText || "N/A";
+        document.getElementById(
+            "paper-experience"
+        ).textContent = `${fullPaperPayload.min_exp} - ${fullPaperPayload.max_exp} years`;
+        document.getElementById("paper-cutoffScore").textContent = `${fullPaperPayload.cutoff_score}%`;
+        const skillsContainer = document.getElementById("paper-skills");
+        skillsContainer.innerHTML = "";
+        if (fullPaperPayload.skills) {
+            fullPaperPayload.skills.split(",").forEach((skill) => {
+                if (skill.trim()) {
+                    const skillTag = document.createElement("span");
+                    skillTag.className =
+                        "bg-slate-200 text-slate-700 text-sm font-medium px-3 py-1 rounded-full";
+                    skillTag.textContent = skill.trim();
+                    skillsContainer.appendChild(skillTag);
+                }
+            });
+        }
+        const questionsContainer = document.getElementById("paper-questions");
+        questionsContainer.innerHTML = "";
+        let questionCounter = 1;
+        if (Array.isArray(paperData.sections)) {
+            paperData.sections.forEach((section, sectionIndex) => {
+                if (!section) return;
+                const sectionTitle = document.createElement("h3");
+                sectionTitle.className =
+                    "text-xl font-bold text-slate-700 mb-4 pb-2 border-b-2 border-[#736b8e]";
+                sectionTitle.textContent = section.title || "Unnamed Section";
+                questionsContainer.appendChild(sectionTitle);
+                if (Array.isArray(section.questions)) {
+                    section.questions.forEach((q, questionIndex) => {
+                        if (!q) return;
+                        const questionBlock = document.createElement("div");
+                        questionBlock.className =
+                            "question-block relative p-4 border border-slate-200 rounded-lg bg-white transition-all duration-200";
+                        let contentHTML = "";
+                    
+                        if (q.type === "MCQ" && Array.isArray(q.options)) {
+                            let optionsHTML = '<div class="mt-4 space-y-3">';
+                            q.options.forEach((option, optionIndex) => {
+                                
+                                // 🚨 FIX APPLIED HERE: Ensure both sides are trimmed for reliable comparison
+                                const isCorrect = (option && option.trim()) === (q.answer && q.answer.trim());
+                                
+                                optionsHTML += `
+                                    <div class="flex items-center group">
+                                        <input type="radio" name="correct_answer_${sectionIndex}_${questionIndex}"
+                                                             id="radio_${sectionIndex}_${questionIndex}_${optionIndex}"
+                                                             class="form-radio h-4 w-4 text-[#736b8e] focus:ring-[#9a92b0] flex-shrink-0"
+                                                             onchange="setCorrectAnswer(${sectionIndex}, ${questionIndex}, ${optionIndex})"
+                                                             ${isCorrect ? "checked" : ""}>
+                                        <div class="ml-3 flex-grow p-1 outline-none border border-transparent focus-within:border-slate-300 rounded-md"
+                                                             contenteditable="true"
+                                                             oninput="updateMcqOption(event, ${sectionIndex}, ${questionIndex}, ${optionIndex})">${option}</div>
+                                        <button onclick="deleteMcqOption(${sectionIndex}, ${questionIndex}, ${optionIndex})"
+                                                             class="ml-2 p-1 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                             title="Delete Option">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </div>
+                                `;
+                            });
+                            optionsHTML += `</div>
+                                <div class="mt-4">
+                                    <button onclick="addMcqOption(${sectionIndex}, ${questionIndex})" class="text-sm font-medium text-[#736b8e] hover:text-[#5f5778]">
+                                        + Add Option
+                                    </button>
+                                </div>`;
+                            contentHTML = optionsHTML;
+                        }
+
+                        else if (q.type === "Short Answer") {
+                            contentHTML = `
+                                <div class="mt-4 pt-3 border-t border-slate-100">
+                                    <p class="text-sm flex items-start">
+                                        <strong class="font-medium text-slate-500 mr-2 mt-1 flex-shrink-0">Answer:</strong>
+                                        <div class="flex-grow p-1 outline-none border border-transparent focus-within:border-slate-300 rounded-md bg-green-50 text-green-800 font-mono"
+                                                             contenteditable="true"
+                                                             oninput="updateShortAnswer(event, ${sectionIndex}, ${questionIndex})">${q.answer || ""
+                                                             }</div>
+                                    </p>
+                                </div>
+                            `;
+                        } else if (q.type === "CODE") { // ✅ CODE QUESTION RENDERING
+                            contentHTML = `
+                                <div class="mt-4 pt-3 border-t border-slate-100">
+                                    <p class="text-sm font-medium text-slate-500 mb-2">Expected Solution / Code Editor (Reference):</p>
+                                    <div class="flex-grow p-3 outline-none border border-slate-300 focus-within:border-[#736b8e] rounded-md bg-slate-800 text-green-300 font-mono text-sm whitespace-pre-wrap"
+                                                             contenteditable="true"
+                                                             style="min-height: 100px; tab-size: 4;"
+                                                             oninput="updateShortAnswer(event, ${sectionIndex}, ${questionIndex})">${q.answer || "// Write sample code solution here..."
+                                                             }</div>
+                                    <p class="text-xs text-slate-500 mt-2">Note: This box simulates the code editor/reference answer.</p>
+                                </div>
+                                `;
+                        } else { // Default/Fallback
+                            contentHTML = `<div class="mt-4 pt-3 border-t border-slate-100"><p class="text-sm"><strong class="font-medium text-slate-500">Answer:</strong> <span class="text-green-700 font-mono bg-green-50 p-1 rounded">${q.answer || "N/A"
+                                }</span></p></div>`;
+                        }
+                        const isRequired = q.required || false;
+                        const contextualAddToolbar = `
+                            <div class="contextual-add-toolbar absolute top-2 right-2 z-10 flex-col items-center gap-1 p-1.5 bg-white border border-slate-200 rounded-lg shadow-lg lg:top-1/2 lg:-translate-y-1/2 lg:left-full lg:right-auto lg:ml-4">
+                                <button onclick="addQuestionAfter(${sectionIndex}, ${questionIndex}, 'MCQ')" title="Add Multiple Choice" class="p-2 text-slate-500 hover:bg-[#736b8e] hover:text-white rounded-md transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </button>
+                                <button onclick="addQuestionAfter(${sectionIndex}, ${questionIndex}, 'Short Answer')" title="Add Short Answer" class="p-2 text-slate-500 hover:bg-[#736b8e] hover:text-white rounded-md transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+                                </button>
+                                <button onclick="addQuestionAfter(${sectionIndex}, ${questionIndex}, 'CODE')" title="Add Code Question" class="p-2 text-slate-500 hover:bg-[#736b8e] hover:text-white rounded-md transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                                </button>
+                            </div>
+                        `;
+                        
+                        questionBlock.innerHTML = `
+                            ${contextualAddToolbar}
+                            <div class="flex items-start">
+                                <span class="font-semibold text-slate-800 pt-1">${questionCounter}.</span>
+                                <div class="ml-2 w-full">
+                                    <div class="question-text-editor outline-none p-1 border border-transparent focus:border-slate-300 rounded-md"
+                                                             id="editor-${sectionIndex}-${questionIndex}"
+                                                             contenteditable="true">${q.text || "Question text not available."
+                                                             }</div>
+                                    <div class="custom-toolbar hidden mt-2 py-1 flex flex-wrap items-center gap-1 border rounded-lg p-1 bg-slate-50 shadow-sm">
+                                        <button onclick="formatDoc('bold')" class="p-2 rounded-md hover:bg-slate-200 transition-colors" title="Bold"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg></button>
+                                        <button onclick="formatDoc('italic')" class="p-2 rounded-md hover:bg-slate-200 transition-colors" title="Italic"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" y2="20"></line></svg></button>
+                                        <button onclick="formatDoc('underline')" class="p-2 rounded-md hover:bg-slate-200 transition-colors" title="Underline"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg></button>
+                                        <div class="border-l h-6 border-slate-200 mx-1"></div>
+                                        
+                                        // ✅ New Code: Button और Hidden Input अलग-अलग रखें
+
+// 1. पहले Hidden Input बनाएं (Unique ID के साथ)
+<input type="file" id="file-input-${sectionIndex}-${questionIndex}" accept="image/*" class="hidden" onchange="insertImage(event, ${sectionIndex}, ${questionIndex})">
+
+// 2. फिर Button बनाएं जो उस इनपुट को ट्रिगर करेगा
+<button onclick="triggerImageUpload(${sectionIndex}, ${questionIndex})" class="p-2 rounded-md hover:bg-slate-200 transition-colors" title="Insert Image">
+    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+    </svg>
+</button>
+                                        
+                                        <button 
+                                            class="p-2 rounded-md hover:bg-slate-200 transition-colors code-block-button" 
+                                            onclick="insertCodeBlock(this, ${sectionIndex}, ${questionIndex})" 
+                                            title="Insert Code Block (Max ${MAX_CODE_BLOCKS})"
+                                            id="code-btn-${sectionIndex}-${questionIndex}">
+                                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                        </button>
+                                    </div>
+                                    ${contentHTML}
+                                    <div class="question-toolbar mt-4 pt-3 border-t border-slate-100 flex flex-wrap justify-center sm:justify-end items-center gap-x-4 gap-y-2 text-sm">
+                                        <button onclick="copyQuestion(${sectionIndex}, ${questionIndex})" title="Copy Question" class="p-2 text-slate-500 hover:text-[#736b8e] hover:bg-slate-100 rounded-full transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
+                                        <button onclick="deleteQuestion(${sectionIndex}, ${questionIndex})" title="Delete Question" class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                        <div class="border-l h-6 border-slate-200 hidden mx-2 hidden sm:block"></div>
+                                        <div class="flex items-center gap-2 hidden">
+                                            <span class="font-medium text-slate-600">Required</span>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" onchange="toggleRequired(this, ${sectionIndex}, ${questionIndex})" class="sr-only peer" ${isRequired ? "checked" : ""
+                                                }>
+                                                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-[#9a92b0] peer-checked:after:translate-x-full peer-checked:after:border-white after:content[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#736b8e]"></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        questionsContainer.appendChild(questionBlock);
+                        
+                        // Event Listeners for the Question Block
+                        const editorDiv = questionBlock.querySelector(".question-text-editor");
+                        const customToolbar = questionBlock.querySelector(".custom-toolbar");
+
+                        editorDiv.addEventListener("focus", () => {
+                            document.querySelectorAll(".question-block").forEach((el) => {
+                                el.classList.remove(
+                                    "question-active",
+                                    "ring-2",
+                                    "ring-[#736b8e]"
+                                );
+                            });
+                            questionBlock.classList.add(
+                                "question-active",
+                                "ring-2",
+                                "ring-[#736b8e]"
+                            );
+                            customToolbar.classList.remove("hidden");
+                        });
+                        
+                        editorDiv.addEventListener("blur", (e) => {
+                             // If focus moves within the same block (e.g. to a toolbar button or code content), don't hide
+                            setTimeout(() => { // Small delay to check if focus moved to a child element
+                                if (!questionBlock.contains(document.activeElement)) {
+                                    customToolbar.classList.add("hidden");
+                                    questionBlock.classList.remove("ring-2", "ring-[#736b8e]");
+                                }
+                            }, 50);
+                        });
+
+                        editorDiv.addEventListener("input", (e) => {
+                            if (
+                                fullPaperPayload.sections[sectionIndex]?.questions[
+                                questionIndex
+                                ]
+                            ) {
+                                fullPaperPayload.sections[sectionIndex].questions[
+                                    questionIndex
+                                ].text = editorDiv.innerHTML;
+                            }
+                            updateCodeBlockButtonState(editorDiv);
+                            // NOTE: We are NOT saving the updated payload to session storage.
+                        });
+                        
+                        // Initial state check for code block button
+                        updateCodeBlockButtonState(editorDiv);
+
+                        questionCounter++;
+                    });
+                }
+            });
+        }
+    }
+    
+    document.addEventListener("DOMContentLoaded", function () {
+        // ... (rest of DOMContentLoaded remains the same)
+        const userMenuButton = document.getElementById("user-menu-button");
+        const userMenu = document.getElementById("user-menu");
+
+        if (userMenuButton && userMenu) {
+            userMenuButton.addEventListener("click", (event) => {
+                userMenu.classList.toggle("hidden");
+                event.stopPropagation();
+            });
+
+            document.addEventListener("click", (event) => {
+                if (
+                    !userMenu.classList.contains("hidden") &&
+                    !userMenuButton.contains(event.target)
+                ) {
+                    userMenu.classList.add("hidden");
+                }
+            });
+        }
+        let skillSearchTimeout;
+        
+        const skillsInput = document.getElementById("skills-input");
+        const skillsDropdown = document.getElementById("skills-dropdown");
+        
+        if (skillsInput) {
+            skillsInput.addEventListener("input", async (e) => {
+                clearTimeout(skillSearchTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length >= 1) {
+                    skillSearchTimeout = setTimeout(async () => {
+                        try {
+                            const response = await fetch(
+                                "{% url 'search_skills_suggestions' %}?q=" + encodeURIComponent(query)
+                            );
+                            const data = await response.json();
+                            
+                            const availableDbSkills = data.skills.filter(
+                                s => !selectedSkills.includes(s)
+                            );
+                            
+                            skillsDropdown.innerHTML = "";
+                            
+                            // Database skills (green)
+                            if (availableDbSkills && availableDbSkills.length > 0) {
+                                availableDbSkills.forEach(skill => {
+                                    const option = document.createElement("div");
+                                    option.className = "px-4 py-2 cursor-pointer hover:bg-slate-100 flex items-center transition-colors";
+                                    option.innerHTML = `<span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span> ${skill}`;
+                                    option.addEventListener("click", () => selectSkill(skill));
+                                    skillsDropdown.appendChild(option);
+                                });
+                            }
+                            
+                            // AI suggestions (blue)
+                            if (data.suggestions && data.suggestions.length > 0) {
+                                if (availableDbSkills.length > 0) {
+                                    const separator = document.createElement("div");
+                                    separator.className = "border-t border-slate-200 my-2";
+                                    skillsDropdown.appendChild(separator);
+                                }
+                                
+                                const aiHeader = document.createElement("div");
+                                aiHeader.className = "px-4 py-2 font-semibold text-blue-600 text-sm bg-blue-50";
+                                aiHeader.textContent = "🤖 AI Suggestions:";
+                                skillsDropdown.appendChild(aiHeader);
+                                
+                                data.suggestions.forEach(skill => {
+                                    const option = document.createElement("div");
+                                    option.className = "px-4 py-2 cursor-pointer hover:bg-blue-50 flex items-center transition-colors";
+                                    option.innerHTML = `<span class="text-blue-500 mr-2">✨</span> ${skill}`;
+                                    option.addEventListener("click", () => selectSkill(skill));
+                                    skillsDropdown.appendChild(option);
+                                });
+                            }
+                            
+                            // No results
+                            if (availableDbSkills.length === 0 && (!data.suggestions || data.suggestions.length === 0)) {
+                                const noResult = document.createElement("div");
+                                noResult.className = "px-4 py-2 text-center text-slate-500 text-sm";
+                                noResult.textContent = "No skills found";
+                                skillsDropdown.appendChild(noResult);
+                            }
+                            
+                            if (skillsDropdown) skillsDropdown.classList.remove("hidden");
+                            
+                        } catch (error) {
+                            console.error("AI suggestion error:", error);
+                            showToast("Error loading suggestions", "error");
+                        }
+                    }, 300);
+                } else if (query.length === 0) {
+                    renderDropdown();
+                    if (skillsDropdown) skillsDropdown.classList.remove("hidden");
+                } else {
+                    if (skillsDropdown) skillsDropdown.classList.add("hidden");
+                }
+            });
+            
+            // Close dropdown on outside click
+            document.addEventListener("click", (e) => {
+                if (skillsInput && !skillsInput.contains(e.target) && 
+                    skillsDropdown && !skillsDropdown.contains(e.target)) {
+                    skillsDropdown.classList.add("hidden");
+                }
+            });
+        }
+    });
+</script>
+
+
+</body>
+
+</html>

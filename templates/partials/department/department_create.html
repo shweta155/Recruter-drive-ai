@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Department</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              // Using your defined colors
+              "theme-primary": "#6f42c1", // Vibrant purple for accents
+              "theme-light": "#f8f5ff", // Very light purple for backgrounds
+              "gray-text": "#6b7280", // Standard gray text
+              "theme-button": "rgb(115, 107, 142)", // Muted purple for primary buttons
+              "theme-button-hover": "rgb(99, 92, 122)", // Darker hover for buttons
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      /* Custom transition for the toast notification */
+      #toast-notification {
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 font-sans">
+    <div class="flex h-screen bg-gray-50">
+      {% include 'partials/sidebar.html' %}
+
+      <div class="flex-1 flex flex-col overflow-hidden">
+        {% include 'partials/header.html' with page_title="" %}
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:p-10">
+          <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-xl border border-gray-200 p-8 md:p-10">
+            <h2 class="text-3xl font-bold tracking-tight mb-8 text-gray-900">
+              Department Details
+            </h2>
+
+            <form method="post" novalidate>
+              {% csrf_token %}
+              <div class="mb-8">
+                <label
+                  for="{{ form.name.id_for_label }}"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  {{ form.name.label }} <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="{{ form.name.name }}"
+                  id="{{ form.name.id_for_label }}"
+                  value="{{ form.name.value|default_if_none:'' }}"
+                  placeholder="e.g., Engineering, Marketing"
+                  class="w-full text-sm px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-theme-primary transition-colors placeholder:text-gray-400"
+                />
+                {% if form.name.errors %}
+                <div class="text-red-600 text-sm mt-1.5">
+                  {{ form.name.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+
+              <div class="mb-8">
+                <div class="flex justify-between items-center mb-3">
+                  <label class="block text-sm font-medium text-gray-700">
+                    Sections <span class="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    id="open-section-modal"
+                    class="inline-flex items-center gap-1.5 text-sm font-medium bg-theme-light text-theme-primary px-3 py-1.5 rounded-md hover:bg-purple-100 transition-colors"
+                  >
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.5 1.5H9.5V9.5H1.5v1h8V18.5h1v-8h8v-1h-8V1.5z" />
+                    </svg>
+                    Add New Section
+                  </button>
+                </div>
+
+                <div class="relative">
+                  <div class="flex flex-wrap gap-x-6 gap-y-4" id="sections-container">
+                    {% for checkbox in form.sections %}
+                    <div class="flex items-center">
+                      {{ checkbox.tag }}
+                      <label
+                        for="{{ checkbox.id_for_label }}"
+                        class="ml-2 text-sm text-gray-600"
+                      >
+                        {{ checkbox.choice_label }}
+                      </label>
+                    </div>
+                    {% endfor %}
+                    </div>
+                </div>
+
+                {% if form.sections.errors %}
+                <div class="text-red-600 text-sm mt-2">
+                  {{ form.sections.errors.0 }}
+                </div>
+                {% endif %}
+              </div>
+
+              <div class="flex justify-end pt-4">
+                <button
+                  type="submit"
+                  class="bg-theme-button text-white font-bold py-2.5 px-6 rounded-lg shadow-sm hover:bg-theme-button-hover focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 transition-all duration-300"
+                >
+                  Save Department
+                </button>
+              </div>
+            </form>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div
+      id="section-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 w-full max-w-md">
+        <h3 class="text-xl font-bold mb-5 text-gray-900">Create New Section</h3>
+
+        <div class="mb-5">
+          <label for="section-name" class="block text-sm font-medium text-gray-700 mb-2">
+            Section Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="section-name"
+            placeholder="e.g., Technical, HR, Communication"
+            class="w-full text-sm px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-theme-primary transition-colors placeholder:text-gray-400"
+          />
+          <div id="section-error" class="text-red-600 text-sm mt-1.5 hidden"></div>
+        </div>
+
+        <div class="flex gap-3">
+          <button
+            type="button"
+            id="close-section-modal"
+            class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            id="save-section-btn"
+            class="flex-1 px-4 py-2.5 bg-theme-button text-white rounded-lg text-sm font-medium hover:bg-theme-button-hover transition-colors shadow-sm"
+          >
+            Create Section
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div
+      id="toast-notification"
+      class="hidden fixed top-5 right-5 z-[100] max-w-xs w-full bg-green-500 text-white px-5 py-3 rounded-lg shadow-lg translate-x-full opacity-0"
+    >
+      <span id="toast-message"></span>
+    </div>
+
+    <script>
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + "=")) {
+              cookieValue = decodeURIComponent(
+                cookie.substring(name.length + 1)
+              );
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+      
+      // --- ✨ NEW TOAST NOTIFICATION FUNCTION (Replaces alert()) ✨ ---
+      /**
+       * Shows a toast notification.
+       * @param {string} message - The message to display.
+       * @param {boolean} [isError=false] - True for red (error), false for green (success).
+       */
+      function showToast(message, isError = false) {
+        const toast = document.getElementById("toast-notification");
+        const messageEl = document.getElementById("toast-message");
+        if (!toast || !messageEl) return;
+
+        messageEl.textContent = message;
+        toast.classList.toggle("bg-green-500", !isError);
+        toast.classList.toggle("bg-red-500", isError);
+
+        // Show
+        toast.classList.remove("hidden", "translate-x-full", "opacity-0");
+        toast.classList.add("translate-x-0", "opacity-100");
+
+        // Hide after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove("translate-x-0", "opacity-100");
+          toast.classList.add("translate-x-full", "opacity-0");
+          setTimeout(() => toast.classList.add("hidden"), 300); // Hide after transition
+        }, 3000);
+      }
+      
+      // --- ✨ NEW CHECKBOX STYLING FUNCTION ✨ ---
+      /**
+       * Applies Tailwind classes to a checkbox element.
+       * @param {HTMLElement} checkboxElement - The input[type="checkbox"] element.
+       */
+      function styleCheckbox(checkboxElement) {
+        if (checkboxElement) {
+          checkboxElement.classList.add(
+            'h-4', 'w-4', 'rounded', 'border-gray-300', 
+            'text-theme-primary', // This colors the checkmark
+            'focus:ring-theme-primary', // This colors the focus ring
+            'focus:ring-2', // Makes the focus ring visible
+            'shadow-sm'
+          );
+        }
+      }
+
+      // --- ✨ UPDATED "SHOW MORE" LOGIC ✨ ---
+      function updateSectionVisibility() {
+        const sectionsContainer = document.getElementById("sections-container");
+        if (!sectionsContainer) return;
+
+        const limit = 4;
+        const items = sectionsContainer.querySelectorAll("div.flex.items-center");
+        const totalItems = items.length;
+
+        let showMoreBtn = document.getElementById("show-more-sections");
+        if (totalItems > limit && !showMoreBtn) {
+          showMoreBtn = document.createElement("button");
+          showMoreBtn.type = "button";
+          showMoreBtn.id = "show-more-sections";
+          
+          // --- 1. CLASS CHANGED --- (Removed mt-2)
+          showMoreBtn.className =
+            "flex items-center justify-center h-7 w-7 text-xs font-bold text-white bg-theme-button hover:bg-theme-button-hover rounded-full transition-all duration-200 ease-in-out"; // <-- MODIFIED
+          showMoreBtn.setAttribute("data-expanded", "false");
+
+          // --- 2. INSERTION CHANGED --- (Appended *inside* the container)
+          sectionsContainer.appendChild(showMoreBtn); // <-- MODIFIED
+
+          showMoreBtn.addEventListener("click", () => {
+            const isExpanded = showMoreBtn.getAttribute("data-expanded") === "true";
+            showMoreBtn.setAttribute("data-expanded", String(!isExpanded));
+            updateSectionVisibility(); // Re-run to update text/visibility
+          });
+        }
+
+        if (totalItems > limit && showMoreBtn) {
+          const isExpanded = showMoreBtn.getAttribute("data-expanded") === "true";
+
+          items.forEach((item, index) => {
+            if (index >= limit) {
+              item.classList.toggle("hidden", !isExpanded);
+            }
+          });
+
+          // --- 3. ANIMATED STYLE/TEXT CHANGE ---
+          if (isExpanded) {
+            showMoreBtn.textContent = "Show Less";
+            // Expand from circle to pill
+            showMoreBtn.classList.remove('h-7', 'w-7', 'text-xs');
+            showMoreBtn.classList.add('px-3', 'py-1', 'text-sm');
+          } else {
+            showMoreBtn.textContent = `+${totalItems - limit}`;
+            // Contract from pill to circle
+            showMoreBtn.classList.add('h-7', 'w-7', 'text-xs');
+            showMoreBtn.classList.remove('px-3', 'py-1', 'text-sm');
+          }
+          showMoreBtn.classList.remove("hidden");
+        } else if (showMoreBtn) {
+          showMoreBtn.classList.add("hidden");
+          items.forEach((item) => item.classList.remove("hidden"));
+        }
+      }
+      // --- ✨ SHOW/HIDE LOGIC END ✨ ---
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // --- Existing Sidebar and User Menu Logic (Unchanged) ---
+        const sidebar = document.getElementById("sidebar");
+        const toggleButton = document.getElementById("sidebar-toggle");
+        const sidebarLogo = document.getElementById("sidebar-logo");
+        const sidebarTexts = document.querySelectorAll(".sidebar-text");
+        const sidebarHeader = document.getElementById("sidebar-header");
+
+        if (toggleButton) {
+          toggleButton.addEventListener("click", () => {
+            sidebar.classList.toggle("w-64");
+            sidebar.classList.toggle("w-20");
+            if (sidebarLogo) sidebarLogo.classList.toggle("hidden");
+            if (sidebarHeader) {
+              sidebarHeader.classList.toggle("justify-between");
+              sidebarHeader.classList.toggle("justify-center");
+            }
+            sidebarTexts.forEach((text) => {
+              text.classList.toggle("hidden");
+            });
+          });
+        }
+
+        const userMenuButton = document.getElementById("user-menu-button");
+        const userMenu = document.getElementById("user-menu");
+
+        if (userMenuButton) {
+          userMenuButton.addEventListener("click", (event) => {
+            if (userMenu) userMenu.classList.toggle("hidden");
+            event.stopPropagation();
+          });
+        }
+
+        document.addEventListener("click", (event) => {
+          if (
+            userMenu &&
+            !userMenu.classList.contains("hidden") &&
+            userMenuButton &&
+            !userMenuButton.contains(event.target)
+          ) {
+            userMenu.classList.add("hidden");
+          }
+        });
+
+        // --- ✨ SECTION CREATION MODAL LOGIC (Updated) ✨ ---
+        const modal = document.getElementById("section-modal");
+        const openModalBtn = document.getElementById("open-section-modal");
+        const closeModalBtn = document.getElementById("close-section-modal");
+        const saveSectionBtn = document.getElementById("save-section-btn");
+        const sectionNameInput = document.getElementById("section-name");
+        const sectionError = document.getElementById("section-error");
+        const sectionsContainer = document.getElementById("sections-container");
+
+        openModalBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          modal.classList.remove("hidden");
+          sectionNameInput.focus();
+        });
+
+        closeModalBtn.addEventListener("click", () => {
+          modal.classList.add("hidden");
+          sectionNameInput.value = "";
+          sectionError.classList.add("hidden");
+        });
+        
+        // Close modal on background click
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeModalBtn.click();
+          }
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+            closeModalBtn.click();
+          }
+        });
+
+        saveSectionBtn.addEventListener("click", async () => {
+          const sectionName = sectionNameInput.value.trim();
+
+          if (!sectionName) {
+            sectionError.textContent = "Section name is required.";
+            sectionError.classList.remove("hidden");
+            return;
+          }
+
+          saveSectionBtn.disabled = true;
+          saveSectionBtn.textContent = "Creating...";
+
+          try {
+            const response = await fetch("{% url 'create_section_ajax' %}", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+              },
+              body: JSON.stringify({ name: sectionName }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              const newCheckboxId = `id_sections_${data.section.id}`;
+              const newCheckboxHTML = `
+                <div class="flex items-center">
+                  <input type="checkbox" id="${newCheckboxId}" name="sections" value="${data.section.id}" checked>
+                  <label for="${newCheckboxId}" class="ml-2 text-sm text-gray-600">
+                    ${data.section.name}
+                  </label>
+                </div>
+              `;
+
+              sectionsContainer.insertAdjacentHTML("beforeend", newCheckboxHTML);
+              
+              // --- ✨ NEW: Style the newly added checkbox ✨ ---
+              const newCheckbox = document.getElementById(newCheckboxId);
+              styleCheckbox(newCheckbox);
+
+              // Close modal
+              closeModalBtn.click();
+              
+              // --- ✨ NEW: Call to re-check visibility ✨ ---
+              updateSectionVisibility(); 
+
+              // --- ✨ UPDATED: Use toast notification instead of alert() ✨ ---
+              showToast(`Section "${data.section.name}" created and selected.`);
+            } else {
+              sectionError.textContent =
+                data.errors?.name?.[0] || data.message || "Error creating section.";
+              sectionError.classList.remove("hidden");
+            }
+          } catch (error) {
+            sectionError.textContent = "Network error. Please try again.";
+            sectionError.classList.remove("hidden");
+            console.error("Error:", error);
+          } finally {
+            saveSectionBtn.disabled = false;
+            saveSectionBtn.textContent = "Create Section";
+          }
+        });
+        
+        sectionNameInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            saveSectionBtn.click();
+          }
+        });
+        
+        // --- ✨ EXISTING DEPARTMENT NAME VALIDATION (Unchanged) ✨ ---
+        const departmentForm = document.querySelector('form[method="post"]');
+        const nameInput = document.getElementById(
+          "{{ form.name.id_for_label }}"
+        );
+
+        const showClientError = (inputElement, message) => {
+          const oldError =
+            inputElement.parentElement.querySelector(".client-error");
+          if (oldError) oldError.remove();
+
+          inputElement.classList.add("border-red-500", "focus:border-red-500", "focus:ring-red-500");
+          const errorElement = document.createElement("div");
+          errorElement.className = "client-error text-red-600 text-sm mt-1.5";
+          errorElement.textContent = message;
+          inputElement.insertAdjacentElement("afterend", errorElement);
+        };
+
+        const clearClientError = (inputElement) => {
+          const error =
+            inputElement.parentElement.querySelector(".client-error");
+          if (error) {
+            error.remove();
+            inputElement.classList.remove("border-red-500", "focus:border-red-500", "focus:ring-red-500");
+          }
+        };
+
+        if (nameInput) {
+          nameInput.addEventListener("input", () => {
+            const value = nameInput.value;
+            const hasInvalidChars = /[^a-zA-Z\s]/.test(value);
+
+            if (hasInvalidChars) {
+              showClientError(
+                nameInput,
+                "Only letters and spaces are allowed."
+              );
+            } else {
+              clearClientError(nameInput);
+            }
+
+            let sanitizedValue = value.replace(/[^a-zA-Z\s]/g, "");
+            sanitizedValue = sanitizedValue.slice(0, 50);
+
+            if (nameInput.value !== sanitizedValue) {
+              const selectionStart = nameInput.selectionStart;
+              const selectionEnd = nameInput.selectionEnd;
+              nameInput.value = sanitizedValue;
+              nameInput.setSelectionRange(selectionStart, selectionEnd);
+            }
+          });
+        }
+
+        if (departmentForm) {
+          departmentForm.addEventListener("submit", (event) => {
+            clearClientError(nameInput);
+
+            const nameValue = nameInput.value.trim();
+            const hasInvalidChars = /[^a-zA-Z\s]/.test(nameValue);
+            let isValid = true;
+
+            if (hasInvalidChars) {
+              showClientError(
+                nameInput,
+                "Only letters and spaces are allowed."
+              );
+              isValid = false;
+            } else if (nameValue.length > 0 && nameValue.length < 3) {
+              showClientError(
+                nameInput,
+                "Department name must be at least 3 characters long."
+              );
+              isValid = false;
+            }
+
+            if (!isValid) {
+              event.preventDefault();
+            }
+          });
+        }
+        
+        // --- ✨ NEW: Style existing checkboxes on page load ✨ ---
+        document.querySelectorAll('#sections-container input[type="checkbox"]').forEach(styleCheckbox);
+        
+        // --- ✨ NEW: Run visibility check on page load ✨ ---
+        updateSectionVisibility();
+      });
+    </script>
+  </body>
+</html>

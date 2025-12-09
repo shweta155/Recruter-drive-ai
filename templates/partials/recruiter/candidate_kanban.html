@@ -1,0 +1,429 @@
+
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban - {{ job.title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* --- KANBAN STYLES (UNCHANGED) --- */
+        .kanban-column {
+            min-width: 280px;
+            width: 280px;
+            transition: all 0.3s ease;
+        }
+
+        .kanban-column.collapsed {
+            min-width: 60px;
+            width: 60px;
+        }
+
+        .kanban-column.collapsed .column-body,
+        .kanban-column.collapsed .column-count,
+        .kanban-column.collapsed .column-icon {
+            display: none;
+        }
+
+        .kanban-column.collapsed .column-title {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            padding: 16px 0;
+        }
+
+        .kanban-column.collapsed .collapse-arrow {
+            transform: rotate(0deg);
+        }
+
+        .collapse-arrow {
+            transform: rotate(180deg);
+            transition: transform 0.3s ease;
+        }
+
+        .kanban-card {
+            transition: all 0.2s ease;
+        }
+        
+        .kanban-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .kanban-card.dragging {
+            opacity: 0.5;
+        }
+        
+        .drop-zone {
+            min-height: 120px;
+        }
+        
+        .drop-zone.drag-over {
+            background-color: #eff6ff;
+            border: 2px dashed #3b82f6;
+            border-radius: 8px;
+        }
+        
+        /* Custom scrollbar */
+        .kanban-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .kanban-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .kanban-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .kanban-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .kanban-column {
+                min-width: 250px;
+                width: 250px;
+            }
+            .kanban-column.collapsed {
+                min-width: 50px;
+                width: 50px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    
+    <div class="flex h-screen overflow-hidden">
+        
+        {% include 'partials/sidebar.html' %} 
+        
+        <div class="flex-1 flex flex-col overflow-hidden">
+            
+            {% include 'partials/header.html' with page_title="Kanban Board" %}
+
+            <main class="flex-1 flex flex-col overflow-hidden bg-gray-100">
+                
+                <div class="bg-white border-b border-gray-200 px-6 py-5 shadow-sm z-10">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h1 class="text-2xl font-bold text-gray-900">{{ job.title }}</h1>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Active Recruitment
+                                </span>
+                            </div>
+
+                            <div class="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
+                                <div class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>{{ job.location|default:"Remote" }}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    <span>{{ job.job_type|default:"Full-time" }}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>{{ job.salary_range|default:"Competitive Salary" }}</span>
+                                </div>
+                            </div>
+
+                            <p class="text-sm text-gray-600 line-clamp-1 max-w-2xl">
+                                {{ job.description|striptags|truncatewords:20|default:"Manage the recruitment pipeline for this position directly from this board." }}
+                            </p>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <a href="{% url 'candidate_list' job_pk=job.pk %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg font-medium text-sm text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                </svg>
+                                List View
+                            </a>
+                         
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-1 p-4 overflow-hidden">
+                    <div class="h-full overflow-hidden relative rounded-xl bg-white border border-gray-200 shadow-sm">
+                        <div id="kanbanBoard" class="flex gap-0 overflow-x-auto kanban-scroll h-full">
+                            </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Load Django Data
+        var kanbanData = {{ kanban_data|safe }};
+        var columnsData = {{ kanban_columns|safe }};
+
+        // Initialize Kanban Board
+        function initKanban() {
+            const board = document.getElementById('kanbanBoard');
+            
+            columnsData.forEach(column => {
+                const columnEl = createColumn(column);
+                board.appendChild(columnEl);
+            });
+
+            // Populate cards
+            kanbanData.forEach(item => {
+                const card = createCard(item);
+                const columnBody = document.querySelector(`[data-column="${item.state}"]`);
+                if (columnBody) {
+                    columnBody.appendChild(card);
+                }
+            });
+
+            updateCardCounts();
+        }
+
+        // Create Column
+        function createColumn(column) {
+            const div = document.createElement('div');
+            div.className = 'kanban-column flex-shrink-0 border-r border-gray-200';
+            div.dataset.columnId = column.dataField;
+            
+            div.innerHTML = `
+                <div class="h-full flex flex-col bg-gray-50">
+                    <div class="px-3 py-3 bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between" data-toggle="${column.dataField}">
+                        <div class="flex items-center space-x-2 flex-1">
+                            <svg class="w-4 h-4 text-gray-400 collapse-arrow flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span class="column-icon text-lg flex-shrink-0">📁</span>
+                            <h3 class="column-title font-semibold text-gray-700 text-xs uppercase tracking-wider">${column.text}</h3>
+                        </div>
+                        <span class="column-count bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2" data-count="${column.dataField}">0</span>
+                    </div>
+                    <div class="column-body flex-1 p-3 overflow-y-auto kanban-scroll drop-zone" data-column="${column.dataField}">
+                        </div>
+                </div>
+            `;
+            
+            setupDropZone(div.querySelector('.drop-zone'));
+            setupColumnToggle(div);
+            return div;
+        }
+
+        // Create Card
+        // function createCard(item) {
+        //     const div = document.createElement('div');
+        //     div.className = 'kanban-card bg-white rounded-md shadow-sm border border-gray-200 p-3 mb-3 cursor-move hover:border-blue-300 hover:shadow-md';
+        //     div.draggable = true;
+        //     div.dataset.id = item.id;
+        //     div.dataset.status = item.state;
+            
+        //     const tagsHtml = item.tags ? `
+        //         <div class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100">
+        //             ${item.tags.split(',').map(tag => `
+        //                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
+        //                     ${tag.trim()}
+        //                 </span>
+        //             `).join('')}
+        //         </div>
+        //     ` : '';
+            
+        //     div.innerHTML = `
+        //         <div class="flex items-start justify-between mb-1">
+        //             <h4 class="font-semibold text-gray-900 text-sm flex-1 leading-tight">${item.label}</h4>
+        //             <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 ml-2 mt-1" style="background-color: ${item.hex || '#3b82f6'}"></div>
+        //         </div>
+        //         ${tagsHtml}
+        //     `;
+            
+        //     setupDragEvents(div);
+        //     return div;
+        // }
+
+// Create Card
+function createCard(item) {
+    const div = document.createElement('div');
+    
+    // ADDED: 'cursor-pointer' class so it looks clickable
+    div.className = 'kanban-card bg-white rounded-md shadow-sm border border-gray-200 p-3 mb-3 cursor-pointer hover:border-blue-300 hover:shadow-md relative';
+    
+    div.draggable = true;
+    div.dataset.id = item.id;
+    div.dataset.status = item.state;
+    
+    const tagsHtml = item.tags ? `
+        <div class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100">
+            ${item.tags.split(',').map(tag => `
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
+                    ${tag.trim()}
+                </span>
+            `).join('')}
+        </div>
+    ` : '';
+    
+    div.innerHTML = `
+        <div class="flex items-start justify-between mb-1">
+            <h4 class="font-semibold text-gray-900 text-sm flex-1 leading-tight hover:text-blue-600 transition-colors">
+                ${item.label}
+            </h4>
+            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 ml-2 mt-1" style="background-color: ${item.hex || '#3b82f6'}"></div>
+        </div>
+        ${tagsHtml}
+    `;
+    
+    setupDragEvents(div);
+
+    // --- NEW CODE: CLICK EVENT LISTENER ---
+    div.addEventListener('click', function(e) {
+        // 1. Prevent redirection if the user is currently dragging the card
+        if (div.classList.contains('dragging')) return;
+
+        // 2. Redirect to the detail page
+        if (item.detail_url) {
+            window.location.href = item.detail_url;
+        } else {
+            console.log("Detail URL not found for candidate " + item.id);
+        }
+    });
+    // --------------------------------------
+
+    return div;
+}
+
+        // Setup column collapse/expand
+        function setupColumnToggle(columnEl) {
+            const toggleBtn = columnEl.querySelector('[data-toggle]');
+            
+            toggleBtn.addEventListener('click', () => {
+                columnEl.classList.toggle('collapsed');
+            });
+        }
+
+        // Drag and Drop Setup
+        function setupDragEvents(card) {
+            card.addEventListener('dragstart', (e) => {
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', card.dataset.id);
+            });
+
+            card.addEventListener('dragend', (e) => {
+                card.classList.remove('dragging');
+            });
+        }
+
+        function setupDropZone(zone) {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', (e) => {
+                if (e.target === zone) {
+                    zone.classList.remove('drag-over');
+                }
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                const cardId = e.dataTransfer.getData('text/plain');
+                const card = document.querySelector(`[data-id="${cardId}"]`);
+                const newStatus = zone.dataset.column;
+                
+                if (card && card.dataset.status !== newStatus) {
+                    zone.appendChild(card);
+                    card.dataset.status = newStatus;
+                    updateCardCounts();
+                    
+                    // Send update to server
+                    updateCandidateStatus(cardId, newStatus);
+                }
+            });
+        }
+
+        // Update card counts in column headers
+        function updateCardCounts() {
+            columnsData.forEach(column => {
+                const cards = document.querySelectorAll(`[data-column="${column.dataField}"] .kanban-card`);
+                const countEl = document.querySelector(`[data-count="${column.dataField}"]`);
+                if (countEl) {
+                    countEl.textContent = cards.length;
+                }
+            });
+        }
+
+        
+function updateCandidateStatus(candidateId, newStatus) {
+        console.log("Moving Candidate ID: " + candidateId + " to " + newStatus);
+
+        if (!candidateId) {
+            alert("System Error: Could not detect Candidate ID. Please refresh.");
+            return;
+        }
+
+        fetch("{% url 'update_candidate_kanban_status' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                candidate_id: candidateId,
+                new_status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success case
+                console.log("Status updated successfully.");
+            } else {
+              
+                if (data.message.includes("Evaluation") || data.message.includes("Feedback") || data.message.includes("fill")) {
+                    
+                    if(confirm("⚠️ Action Blocked: " + data.message + "\n\nDo you want to fill the Feedback Form now?")) {
+                        
+                        var urlPattern = "{% url 'submit_feedback' pk=0 %}";
+                        
+                       
+                        var finalUrl = urlPattern.replace('0', candidateId);
+                        
+                        
+                        window.location.href = finalUrl + "?candidate_id=" + candidateId + "&next=kanban";
+                        
+                        return; 
+                  
+                    }
+                } else {
+                    alert("⚠️ Error: " + data.message);
+                }
+                
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error("AJAX Error:", error);
+            alert("Connection Error. Reloading page.");
+            location.reload();
+        });
+    }
+
+        document.addEventListener('DOMContentLoaded', initKanban);
+    </script>
+</body>
+</html>

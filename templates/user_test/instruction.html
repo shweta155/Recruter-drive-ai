@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Instructions | {{ paper.title }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "theme-primary": "#736b8e",
+            "theme-dark": "#5f5778",
+            "theme-light": "#e5e3e9",
+            "gray-text": "#6B7280",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #f7f8fa;
+    }
+    .custom-focus:focus {
+      border-color: #736b8e;
+      box-shadow: 0 0 0 2px rgba(115, 107, 142, 0.3);
+    }
+  </style>
+
+  <script>      
+      window.history.forward();
+      function noBack() {
+          window.history.forward();
+      }
+  </script>
+  </head>
+<body class="text-gray-800" onload="noBack()" onpageshow="if (event.persisted) noBack();">
+
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-white p-6 sm:p-8 rounded-lg shadow-md border border-gray-100">
+      
+      <h1 class="text-2xl font-bold text-theme-dark mb-1 text-center">Test Instructions</h1>
+
+      <div class="bg-gray-50 p-3 rounded-md mb-6 border border-gray-200 text-sm">
+        <h2 class="text-lg font-semibold text-gray-800 mb-1">{{ paper.title }}</h2>
+        <p class="text-gray-600">Job Title: <strong>{{ paper.job_title }}</strong></p>
+        <p class="text-gray-700 mt-1">
+          Duration: <strong>{{ paper.duration }} minutes</strong> | Total Questions: <strong>{{ paper.total_questions }}</strong>
+        </p>
+      </div>
+
+      <div class="bg-theme-light/40 p-4 rounded-md border border-theme-light mb-5">
+        <h3 class="text-lg font-semibold text-theme-dark border-b pb-2 mb-3">Exam Guidelines</h3>
+        <ul class="list-disc pl-5 text-sm text-gray-700 space-y-2">
+          <li>The test duration is strictly <strong>{{ paper.duration }} minutes</strong>.</li>
+          <li>There are approximately <strong>{{ paper.total_questions }}</strong> questions in total.</li>
+          <li>Once a question is submitted, you may not be able to return to it.</li>
+          <li>Ensure you click “Submit Test” at the end. The system will auto-submit when time runs out.</li>
+          <li>Avoid switching tabs or windows during the test to prevent disqualification.</li>
+        </ul>
+      </div>
+
+      <form 
+        id="start-test-form" 
+        method="post" 
+        action="{% url 'test:user_instructions' link_id=link_id %}"
+      >
+        {% csrf_token %}
+        <div class="flex items-start mb-5 pt-3 border-t border-gray-200">
+          <input 
+            type="checkbox" 
+            id="accept_terms" 
+            name="accept_terms" 
+            required 
+            class="h-4 w-4 text-theme-dark border-gray-300 rounded custom-focus mt-1"
+          >
+          <label for="accept_terms" class="ml-2 text-sm text-gray-700">
+            I have read and understood the <strong class="text-theme-dark">Terms and Conditions</strong>.
+          </label>
+        </div>
+
+        <button 
+          type="submit" 
+          id="start-button"
+          disabled
+          class="w-full bg-gray-400 text-white font-semibold py-2.5 rounded-md text-base 
+                 transition-all cursor-not-allowed"
+        >
+          Start Assessment
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const checkbox = document.getElementById('accept_terms');
+      const startButton = document.getElementById('start-button');
+      
+      const updateButtonState = () => {
+        if (checkbox.checked) {
+          startButton.disabled = false;
+          startButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+          startButton.classList.add('bg-theme-primary', 'hover:bg-theme-dark', 'focus:ring-2', 'focus:ring-theme-primary', 'focus:ring-opacity-50');
+        } else {
+          startButton.disabled = true;
+          startButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+          startButton.classList.remove('bg-theme-primary', 'hover:bg-theme-dark', 'focus:ring-2', 'focus:ring-theme-primary', 'focus:ring-opacity-50');
+        }
+      };
+
+      updateButtonState();
+      checkbox.addEventListener('change', updateButtonState);
+      
+      // Call noBack() on DOMContentLoaded to reinforce the block
+      noBack();
+    });
+  </script>
+
+</body>
+</html>

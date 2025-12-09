@@ -1,0 +1,936 @@
+<!-- 
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title|default:"Paper Details" }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "theme-primary": "#736b8e", // This is rgb(115, 107, 142)
+            "theme-dark": "#5f5778",
+            "theme-light": "#e5e3e9",
+            "gray-text": "#6B7280",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-gray-800">
+  <div class="flex h-screen">
+    {% include 'partials/sidebar.html' %}
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      {% include 'partials/header.html' with page_title="" %}
+
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 pb-4 border-b">
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
+                {{ paper.job_title }}
+              </h2>
+              <p class="text-md text-gray-500">{{ paper.title }}</p>
+            </div>
+            <a href="{% url 'paper_edit' paper.id %}"
+              class="w-full sm:w-auto bg-theme-primary text-white text-center font-semibold py-2 px-4 rounded-lg hover:bg-theme-dark transition-colors">
+              Edit
+            </a>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-6 border-b">
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Department</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.department_name }}
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Duration</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.duration }} Minute
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Cutoff Score</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.cutoff_score }}%
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Experience</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.min_exp }} - {{ paper.max_exp }} yr
+              </p>
+            </div>
+
+            <div class="lg:col-span-2">
+              <label class="text-sm font-medium text-gray-500">Skills</label>
+              <div id="skills-display-container" class="flex flex-wrap gap-2 mt-2">
+              </div>
+              <script id="skills-data" type="application/json">
+        {{ skills|safe }}
+      </script>
+            </div>
+
+          </div>
+
+        <div class="pt-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Questions:</h3>
+            <div class="space-y-6">
+              {% for section in paper.paper_sections.all %}
+              <div class="section-container">
+                <h4 class="text-lg font-semibold text-theme-primary mb-3">
+                  {{ section.title }}
+                </h4>
+                <div class="space-y-4">
+                  {% for question in section.questions.all %}
+                  <div class="question-item pl-4 border-l-2 border-theme-primary">
+
+                    <p class="font-semibold text-gray-800 mb-2">
+                      Q{{ forloop.counter }}. {{ question.text|safe }}
+                    </p>
+
+                    {% if question.question_type == 'MCQ' %}
+                    
+                    {# Normalize answer for matching (Using striptags and lower for robust comparison) #}
+                    {% with answer_clean=question.answer|striptags|lower %}
+                    
+                    {# 💡 FIX START: Find the full correct option text to display in the summary #}
+                    {% with correct_option_text=None %}
+                    {% for option in question.options %}
+                    {% with option_clean=option|striptags|lower %}
+                    {% if option_clean == answer_clean %}
+                    {# Save the full, raw option text #}
+                    {% with option as correct_option_text %}{% endwith %}
+                    {% endif %}
+                    {% endwith %}
+                    {% endfor %}
+                    {% endwith %}
+                    {# 💡 FIX END #}
+
+                    <div class="space-y-2 mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                      {% for option in question.options %}
+                      {# Normalize option for comparison #}
+                      {% with option_clean=option|striptags|lower %}
+
+                      <div class="flex items-start p-3 rounded-md 
+                {% if option_clean == answer_clean %}
+                    /* Correct Answer Highlight */
+                    bg-green-100 border-2 border-green-500 text-green-900 font-semibold
+                {% else %}
+                    /* Default/Wrong Answer Style */
+                    text-gray-800 border border-gray-300 bg-white
+                {% endif %}
+            ">
+                        <span class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0">
+                          {% if option_clean == answer_clean %}
+                          <svg class="w-full h-full fill-current text-green-600" xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.857a.75.75 0 00-1.214-.872l-3.323 3.51-1.666-1.667a.75.75 0 10-1.06 1.06l2.25 2.25a.75.75 0 001.082-.016l3.75-4z"
+                              clip-rule="evenodd" />
+                          </svg>
+                          {% else %}
+                          <svg class="w-full h-full fill-current text-gray-400" xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20" fill="currentColor">
+                            <circle cx="10" cy="10" r="10" />
+                          </svg>
+                          {% endif %}
+                        </span>
+                        <span class="text-sm">
+                          {{ option|striptags }}
+                        </span>
+                      </div>
+                      {% endwith %}
+                      {% endfor %}
+
+                    </div>
+
+                    <p class="mt-4 pt-3 border-t text-sm text-gray-800 bg-theme-light p-3 rounded-md">
+                      <span class="font-bold text-theme-dark">Correct Answer:</span>
+                      <span class="text-green-700 font-semibold">
+                        {# ✅ FIX: Display the actual correct option text, or fallback to the original answer string #}
+                        {% if correct_option_text %}
+                        {{ correct_option_text|striptags }}
+                        {% else %}
+                        {{ question.answer|striptags }}
+                        {% endif %}
+                      </span>
+                    </p>
+
+                    {% endwith %}
+
+                    {% else %}
+                    <p class="mt-2 text-sm text-gray-800 bg-theme-light p-3 rounded-md">
+                      <span class="font-bold text-theme-dark">Answer:</span>
+                      {{ question.answer }}
+                    </p>
+                    {% endif %}
+
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% empty %}
+              <p class="text-gray-500">
+                This paper has no sections or questions.
+              </p>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="pt-6 mt-6 border-t">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-bold text-gray-800">Participants</h3>
+
+              <div class="flex items-center gap-4">
+                <form method="GET" action="" class="flex items-center">
+                  <select name="status" onchange="this.form.submit()"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-theme-primary focus:border-theme-primary block w-full p-2">
+                    <option value="all" {% if selected_status == 'all' %}selected{% endif %}>Show All</option>
+                    <option value="pass" {% if selected_status == 'pass' %}selected{% endif %}>Passed</option>
+                    <option value="fail" {% if selected_status == 'fail' %}selected{% endif %}>Failed</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                  </select>
+
+                  <select name="shortlist_status" onchange="this.form.submit()"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-theme-primary focus:border-theme-primary block w-full p-2">
+                    <option value="all" {% if selected_shortlist_status == 'all' %}selected{% endif %}>All Candidates
+                    </option>
+                    <option value="shortlisted" {% if selected_shortlist_status == 'shortlisted' %}selected{% endif %}>
+                      Shortlisted</option>
+                   <option value="not_shortlisted" {% if selected_shortlist_status == 'not_shortlisted' %}selected{% endif %}>Not Shortlisted</option>
+
+                  </select>
+
+                </form>
+                <a href="{% url 'export_participants_csv' paper.id %}"
+                  class="bg-theme-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-theme-dark transition-colors text-sm whitespace-nowrap">
+                  Export to CSV
+                </a>
+              </div>
+            </div>
+
+            {% if participants %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full bg-white border border-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone Number
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Report
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for registration in participants %}
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {{ registration.email }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {{ registration.phone_number }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {% if registration.status == 'pass' %}
+                      <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Pass
+                      </span>
+                      {% elif registration.status == 'fail' %}
+                      <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                        Fail
+                      </span>
+                      {% else %}
+                      <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Pending
+                      </span>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {% if registration.status == 'pending' %}
+                      <span class="text-gray-400 cursor-not-allowed">Not available</span>
+                      {% else %}
+                      <a href="{% url 'test_report' registration.id %}"
+                        class="text-theme-primary hover:text-theme-dark">
+                        View Report
+                      </a>
+                      {% endif %}
+                    </td>
+
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500 bg-gray-50 p-4 rounded-md">
+              No participants match the current filter.
+            </p>
+            {% endif %}
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+
+    const MAX_DISPLAY_SKILLS = 1; // Only show 2 skills initially
+    let isSkillsExpanded = false;
+
+    function loadSkillsData() {
+      try {
+        const dataElement = document.getElementById("skills-data");
+        if (dataElement && dataElement.textContent) {
+          let content = dataElement.textContent.trim();
+
+          // 1. Handle empty cases
+          if (!content || content === '[]' || content === '""') {
+            return [];
+          }
+
+          // FIX: Replace single quotes used by Python/Django serialization 
+          // with double quotes required by JavaScript JSON.parse.
+          // This turns Python list format like "['skill1', 'skill2']" 
+          // into valid JSON format like '["skill1", "skill2"]'.
+          content = content.replace(/'/g, '"');
+
+          // 2. Safely parse the JSON content
+          const rawSkills = JSON.parse(content);
+
+          if (Array.isArray(rawSkills)) {
+            // Filter out any potential empty strings
+            return rawSkills.map(s => String(s).trim()).filter(Boolean);
+          }
+
+          return [];
+        }
+      } catch (e) {
+        // Now, this error should be much less frequent!
+        console.error("Error parsing skills data (returning empty array):", e);
+      }
+      return [];
+    }
+
+    /**
+     * Toggles the display state and re-renders the skills on the details page.
+     */
+    function toggleSkillsDisplay() {
+      isSkillsExpanded = !isSkillsExpanded;
+      renderSkillsDisplay();
+    }
+
+    /**
+     * Re-renders the skills in the designated container based on the current state.
+     */
+    function renderSkillsDisplay() {
+      const container = document.getElementById("skills-display-container");
+      if (!container) return;
+
+      const allSkills = loadSkillsData();
+      container.innerHTML = ''; // Clear container
+
+      const totalCount = allSkills.length;
+      let skillsToRender = allSkills;
+      let remainingCount = 0;
+
+      // Apply collapse logic if not expanded and count is over limit
+      if (!isSkillsExpanded && totalCount > MAX_DISPLAY_SKILLS) {
+        skillsToRender = allSkills.slice(0, MAX_DISPLAY_SKILLS);
+        remainingCount = totalCount - MAX_DISPLAY_SKILLS;
+      }
+
+      // 1. Render visible skill tags
+      skillsToRender.forEach(skill => {
+        const skillTag = document.createElement("span");
+        // Used a lighter color for skill chips, as seen in the screenshot
+        skillTag.className = "bg-slate-200 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full";
+        skillTag.textContent = skill;
+        container.appendChild(skillTag);
+      });
+
+      // 2. Render the toggle button
+      if (totalCount > MAX_DISPLAY_SKILLS) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.onclick = toggleSkillsDisplay;
+
+        if (!isSkillsExpanded) {
+          // Collapsed view: Show +N more (Matching the dark button in your image)
+          button.className = 'text-xs font-medium px-2.5 py-1 rounded-full bg-theme-primary text-white hover:bg-theme-dark transition-colors';
+          button.textContent = `+${remainingCount}`;
+        } else {
+          // Expanded view: Show Hide button
+          button.className = 'text-xs font-medium px-2.5 py-1 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors';
+          button.textContent = `Hide (-${totalCount - MAX_DISPLAY_SKILLS})`;
+        }
+        container.appendChild(button);
+      }
+    }
+
+    // --- DOMContentLoaded for all JS (including rendering the skills) ---
+    document.addEventListener("DOMContentLoaded", function () {
+
+      // *** 1. Initial Render of Skills ***
+      // We call this first to ensure the skills load correctly
+      renderSkillsDisplay();
+
+      // *** 2. Sidebar/Menu Toggle Logic (Rest of the original code) ***
+      const sidebar = document.getElementById("sidebar");
+      const toggleButton = document.getElementById("sidebar-toggle");
+      const sidebarLogo = document.getElementById("sidebar-logo");
+      const sidebarTexts = document.querySelectorAll(".sidebar-text");
+      const sidebarHeader = document.getElementById("sidebar-header");
+
+      if (toggleButton) {
+        toggleButton.addEventListener("click", () => {
+          sidebar.classList.toggle("w-64");
+          sidebar.classList.toggle("w-20");
+          sidebarLogo.classList.toggle("hidden");
+          sidebarHeader.classList.toggle("justify-between");
+          sidebarHeader.classList.toggle("justify-center");
+          sidebarTexts.forEach((text) => {
+            text.classList.toggle("hidden");
+          });
+        });
+      }
+
+      const userMenuButton = document.getElementById("user-menu-button");
+      const userMenu = document.getElementById("user-menu");
+
+      if (userMenuButton) {
+        userMenuButton.addEventListener("click", (event) => {
+          userMenu.classList.toggle("hidden");
+          event.stopPropagation();
+        });
+      }
+
+      document.addEventListener("click", (event) => {
+        if (
+          userMenu &&
+          !userMenu.classList.contains("hidden") &&
+          !userMenuButton.contains(event.target)
+        ) {
+          userMenu.classList.add("hidden");
+        }
+      });
+    });
+  </script>
+</body>
+
+</html> -->
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title|default:"Paper Details" }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "theme-primary": "#736b8e", // This is rgb(115, 107, 142)
+            "theme-dark": "#5f5778",
+            "theme-light": "#e5e3e9",
+            "gray-text": "#6B7280",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-gray-800">
+  <div class="flex h-screen">
+    {% include 'partials/sidebar.html' %}
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      {% include 'partials/header.html' with page_title="" %}
+
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 pb-4 border-b">
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
+                {{ paper.job_title }}
+              </h2>
+              <p class="text-md text-gray-500">{{ paper.title }}</p>
+            </div>
+            <a href="{% url 'paper_edit' paper.id %}"
+              class="w-full sm:w-auto bg-theme-primary text-white text-center font-semibold py-2 px-4 rounded-lg hover:bg-theme-dark transition-colors">
+              Edit
+            </a>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-6">
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Department</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.department_name }}
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Duration</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.duration }} Minute
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Cutoff Score</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.cutoff_score }}%
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Experience</label>
+              <p class="text-base font-semibold text-gray-900 mt-1">
+                {{ paper.min_exp }} - {{ paper.max_exp }} yr
+              </p>
+            </div>
+            
+            <div class="lg:col-span-3 border-t pt-4">
+              <h3 class="text-sm font-bold text-gray-700 mb-2">Section Weightage Summary</h3>
+              <div class="flex flex-wrap gap-4">
+                
+                {# ✅ NEW: Section Weightage Summary Loop #}
+                {% for section in sections %}
+                <div class="px-3 py-2 bg-theme-light rounded-md text-sm font-semibold">
+                    {{ section.title }}: <span class="text-theme-dark">{{ section.weightage }}%</span>
+                    {% if section.question_count > 0 %}
+                    <span class="text-gray-500 ml-2">({{ section.question_count }} Qs)</span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500">No sections defined.</p>
+                {% endfor %}
+                
+              </div>
+            </div>
+
+            <div class="lg:col-span-3 border-t pt-4">
+              <label class="text-sm font-medium text-gray-500">Skills</label>
+              <div id="skills-display-container" class="flex flex-wrap gap-2 mt-2">
+              </div>
+              <script id="skills-data" type="application/json">
+                {{ skills|safe }}
+              </script>
+            </div>
+
+          </div>
+
+        <div class="pt-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Questions:</h3>
+            <div class="space-y-6">
+              {# Iterating over sections passed from the view #}
+              {% for section in sections %}
+              <div class="section-container">
+                <h4 class="text-lg font-semibold text-theme-primary mb-3 flex justify-between items-center bg-gray-50 p-3 rounded-md">
+                  <span>{{ section.title }}</span>
+                  
+                  {# ✅ NEW: Section Weightage in Question Block Header #}
+                  <span class="text-sm font-bold text-theme-dark bg-white px-2 py-1 rounded-full border border-theme-primary">
+                    {{ section.question_count }} Qs ({{ section.weightage }}%)
+                  </span>
+                </h4>
+                <div class="space-y-4">
+                  {% for question in section.questions.all %}
+                  <div class="question-item pl-4 border-l-2 border-theme-primary">
+
+                    <p class="font-semibold text-gray-800 mb-2">
+                      Q{{ forloop.counter }}. {{ question.text|safe }}
+                    </p>
+
+                    {% if question.question_type == 'MCQ' %}
+                    
+                    {# Normalize answer for matching (Using striptags and lower for robust comparison) #}
+                    {% with answer_clean=question.answer|striptags|lower %}
+                    
+                    {# 💡 FIX START: Find the full correct option text to display in the summary #}
+                    {% with correct_option_text=None %}
+                    {% for option in question.options %}
+                    {% with option_clean=option|striptags|lower %}
+                    {% if option_clean == answer_clean %}
+                    {# Save the full, raw option text #}
+                    {% with option as correct_option_text %}{% endwith %}
+                    {% endif %}
+                    {% endwith %}
+                    {% endfor %}
+                    {% endwith %}
+                    {# 💡 FIX END #}
+
+                    <div class="space-y-2 mt-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                      {% for option in question.options %}
+                      {# Normalize option for comparison #}
+                      {% with option_clean=option|striptags|lower %}
+
+                      <div class="flex items-start p-3 rounded-md 
+                {% if option_clean == answer_clean %}
+                    /* Correct Answer Highlight */
+                    bg-green-100 border-2 border-green-500 text-green-900 font-semibold
+                {% else %}
+                    /* Default/Wrong Answer Style */
+                    text-gray-800 border border-gray-300 bg-white
+                {% endif %}
+            ">
+                        <span class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0">
+                          {% if option_clean == answer_clean %}
+                          <svg class="w-full h-full fill-current text-green-600" xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.857a.75.75 0 00-1.214-.872l-3.323 3.51-1.666-1.667a.75.75 0 10-1.06 1.06l2.25 2.25a.75.75 0 001.082-.016l3.75-4z"
+                              clip-rule="evenodd" />
+                          </svg>
+                          {% else %}
+                          <svg class="w-full h-full fill-current text-gray-400" xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20" fill="currentColor">
+                            <circle cx="10" cy="10" r="10" />
+                          </svg>
+                          {% endif %}
+                        </span>
+                        <span class="text-sm">
+                          {{ option|striptags }}
+                        </span>
+                      </div>
+                      {% endwith %}
+                      {% endfor %}
+
+                    </div>
+
+                    <p class="mt-4 pt-3 border-t text-sm text-gray-800 bg-theme-light p-3 rounded-md">
+                      <span class="font-bold text-theme-dark">Correct Answer:</span>
+                      <span class="text-green-700 font-semibold">
+                        {# ✅ FIX: Display the actual correct option text, or fallback to the original answer string #}
+                        {% if correct_option_text %}
+                        {{ correct_option_text|striptags }}
+                        {% else %}
+                        {{ question.answer|striptags }}
+                        {% endif %}
+                      </span>
+                    </p>
+
+                    {% endwith %}
+
+                    {% else %}
+                    <p class="mt-2 text-sm text-gray-800 bg-theme-light p-3 rounded-md">
+                      <span class="font-bold text-theme-dark">Answer:</span>
+                      {{ question.answer }}
+                    </p>
+                    {% endif %}
+
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% empty %}
+              <p class="text-gray-500">
+                This paper has no sections or questions.
+              </p>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="pt-6 mt-6 border-t">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-bold text-gray-800">Participants</h3>
+
+              <div class="flex items-center gap-4">
+                <form method="GET" action="" class="flex items-center">
+                  <select name="status" onchange="this.form.submit()"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-theme-primary focus:border-theme-primary block w-full p-2">
+                    <option value="all" {% if selected_status == 'all' %}selected{% endif %}>Show All</option>
+                    <option value="pass" {% if selected_status == 'pass' %}selected{% endif %}>Passed</option>
+                    <option value="fail" {% if selected_status == 'fail' %}selected{% endif %}>Failed</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                  </select>
+
+                  <select name="shortlist_status" onchange="this.form.submit()"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-theme-primary focus:border-theme-primary block w-full p-2">
+                    <option value="all" {% if selected_shortlist_status == 'all' %}selected{% endif %}>All Candidates
+                    </option>
+                    <option value="shortlisted" {% if selected_shortlist_status == 'shortlisted' %}selected{% endif %}>
+                      Shortlisted</option>
+                   <option value="not_shortlisted" {% if selected_shortlist_status == 'not_shortlisted' %}selected{% endif %}>Not Shortlisted</option>
+
+                  </select>
+
+                </form>
+                <a href="{% url 'export_participants_csv' paper.id %}"
+                  class="bg-theme-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-theme-dark transition-colors text-sm whitespace-nowrap">
+                  Export to CSV
+                </a>
+              </div>
+            </div>
+
+            {% if participants %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full bg-white border border-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone Number
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Report
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  {% for registration in participants %}
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {{ registration.email }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {{ registration.phone_number }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {% if registration.status == 'pass' %}
+                      <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Pass
+                      </span>
+                      {% elif registration.status == 'fail' %}
+                      <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                        Fail
+                      </span>
+                      {% else %}
+                      <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Pending
+                      </span>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {% if registration.status == 'pending' %}
+                      <span class="text-gray-400 cursor-not-allowed">Not available</span>
+                      {% else %}
+                      <a href="{% url 'test_report' registration.id %}"
+                        class="text-theme-primary hover:text-theme-dark">
+                        View Report
+                      </a>
+                      {% endif %}
+                    </td>
+
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500 bg-gray-50 p-4 rounded-md">
+              No participants match the current filter.
+            </p>
+            {% endif %}
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+
+    const MAX_DISPLAY_SKILLS = 1; // Only show 2 skills initially
+    let isSkillsExpanded = false;
+
+    function loadSkillsData() {
+      try {
+        const dataElement = document.getElementById("skills-data");
+        if (dataElement && dataElement.textContent) {
+          let content = dataElement.textContent.trim();
+
+          // 1. Handle empty cases
+          if (!content || content === '[]' || content === '""') {
+            return [];
+          }
+
+          // FIX: Replace single quotes used by Python/Django serialization 
+          // with double quotes required by JavaScript JSON.parse.
+          // This turns Python list format like "['skill1', 'skill2']" 
+          // into valid JSON format like '["skill1", "skill2"]'.
+          content = content.replace(/'/g, '"');
+
+          // 2. Safely parse the JSON content
+          const rawSkills = JSON.parse(content);
+
+          if (Array.isArray(rawSkills)) {
+            // Filter out any potential empty strings
+            return rawSkills.map(s => String(s).trim()).filter(Boolean);
+          }
+
+          return [];
+        }
+      } catch (e) {
+        // Now, this error should be much less frequent!
+        console.error("Error parsing skills data (returning empty array):", e);
+      }
+      return [];
+    }
+
+    /**
+     * Toggles the display state and re-renders the skills on the details page.
+     */
+    function toggleSkillsDisplay() {
+      isSkillsExpanded = !isSkillsExpanded;
+      renderSkillsDisplay();
+    }
+
+    /**
+     * Re-renders the skills in the designated container based on the current state.
+     */
+    function renderSkillsDisplay() {
+      const container = document.getElementById("skills-display-container");
+      if (!container) return;
+
+      const allSkills = loadSkillsData();
+      container.innerHTML = ''; // Clear container
+
+      const totalCount = allSkills.length;
+      let skillsToRender = allSkills;
+      let remainingCount = 0;
+
+      // Apply collapse logic if not expanded and count is over limit
+      if (!isSkillsExpanded && totalCount > MAX_DISPLAY_SKILLS) {
+        skillsToRender = allSkills.slice(0, MAX_DISPLAY_SKILLS);
+        remainingCount = totalCount - MAX_DISPLAY_SKILLS;
+      }
+
+      // 1. Render visible skill tags
+      skillsToRender.forEach(skill => {
+        const skillTag = document.createElement("span");
+        // Used a lighter color for skill chips, as seen in the screenshot
+        skillTag.className = "bg-slate-200 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full";
+        skillTag.textContent = skill;
+        container.appendChild(skillTag);
+      });
+
+      // 2. Render the toggle button
+      if (totalCount > MAX_DISPLAY_SKILLS) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.onclick = toggleSkillsDisplay;
+
+        if (!isSkillsExpanded) {
+          // Collapsed view: Show +N more (Matching the dark button in your image)
+          button.className = 'text-xs font-medium px-2.5 py-1 rounded-full bg-theme-primary text-white hover:bg-theme-dark transition-colors';
+          button.textContent = `+${remainingCount}`;
+        } else {
+          // Expanded view: Show Hide button
+          button.className = 'text-xs font-medium px-2.5 py-1 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors';
+          button.textContent = `Hide (-${totalCount - MAX_DISPLAY_SKILLS})`;
+        }
+        container.appendChild(button);
+      }
+    }
+
+    // --- DOMContentLoaded for all JS (including rendering the skills) ---
+    document.addEventListener("DOMContentLoaded", function () {
+
+      // *** 1. Initial Render of Skills ***
+      // We call this first to ensure the skills load correctly
+      renderSkillsDisplay();
+
+      // *** 2. Sidebar/Menu Toggle Logic (Rest of the original code) ***
+      const sidebar = document.getElementById("sidebar");
+      const toggleButton = document.getElementById("sidebar-toggle");
+      const sidebarLogo = document.getElementById("sidebar-logo");
+      const sidebarTexts = document.querySelectorAll(".sidebar-text");
+      const sidebarHeader = document.getElementById("sidebar-header");
+
+      if (toggleButton) {
+        toggleButton.addEventListener("click", () => {
+          sidebar.classList.toggle("w-64");
+          sidebar.classList.toggle("w-20");
+          sidebarLogo.classList.toggle("hidden");
+          sidebarHeader.classList.toggle("justify-between");
+          sidebarHeader.classList.toggle("justify-center");
+          sidebarTexts.forEach((text) => {
+            text.classList.toggle("hidden");
+          });
+        });
+      }
+
+      const userMenuButton = document.getElementById("user-menu-button");
+      const userMenu = document.getElementById("user-menu");
+
+      if (userMenuButton) {
+        userMenuButton.addEventListener("click", (event) => {
+          userMenu.classList.toggle("hidden");
+          event.stopPropagation();
+        });
+      }
+
+      document.addEventListener("click", (event) => {
+        if (
+          userMenu &&
+          !userMenu.classList.contains("hidden") &&
+          !userMenuButton.contains(event.target)
+        ) {
+          userMenu.classList.add("hidden");
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

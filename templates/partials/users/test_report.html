@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "theme-primary": "#736b8e",
+              "theme-dark": "#5f5778",
+              "theme-light": "#e5e3e9",
+              "gray-text": "#6B7280",
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9; /* slate-100 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8; /* slate-400 */
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+    </style>
+  </head>
+
+  <body class="h-screen bg-slate-50 font-sans">
+    <div class="flex h-screen">
+      {% include 'partials/sidebar.html' %}
+
+      <div class="flex flex-1 flex-col overflow-hidden">
+        {% include 'partials/header.html' with page_title="Test Report" %}
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50">
+          <div class="container mx-auto px-6 py-8">
+            <header class="mb-6">
+              <h6 class="text-2xl font-bold text-slate-800">
+                {{ registration.question_paper.title }} Report
+              </h6>
+              <p class="text-sm text-slate-500 mt-1">
+                Detailed report for <strong>{{ registration.email }}</strong>'s
+                attempt on {{ registration.start_time }}.
+              </p>
+            </header>
+
+            <section class="bg-white p-6 rounded-xl shadow-lg">
+              <div class="flex justify-between items-start mb-6 gap-6">
+                <div
+                  class="p-4 rounded-lg flex-grow {% if status == 'Pass' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}"
+                >
+                  <h4 class="text-sm font-bold">
+                    Final Result:
+                    <span
+                      class="{% if status == 'Pass' %}text-green-600{% else %}text-red-600{% endif %}"
+                    >
+                      {{ status }}
+                    </span>
+                  </h4>
+
+                  {% if status == 'Pass' %}
+                  <p class="mt-1">
+                    Congratulations! You have successfully passed the
+                    assessment.
+                  </p>
+                  {% else %}
+                  <p class="mt-1 text-sm">
+                    You did not meet the required cutoff score for this
+                    assessment.
+                  </p>
+                  {% endif %}
+                </div>
+
+                <div class="flex-shrink-0">
+                  <label
+                    id="shortlist-label"
+                    for="shortlist-checkbox"
+                    class="flex items-center cursor-pointer select-none transition-opacity duration-200"
+                  >
+                    <div class="relative">
+                      <input
+                        type="checkbox"
+                        id="shortlist-checkbox"
+                        class="sr-only"
+                        data-registration-id="{{ registration.id }}"
+                        {%
+                        if
+                        registration.is_shortlisted
+                        %}checked{%
+                        endif
+                        %}
+                      />
+
+                      <div
+                        class="block bg-gray-300 w-14 h-8 rounded-full transition-colors duration-200 ease-in-out"
+                      ></div>
+                      <div
+                        class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-200 ease-in-out"
+                      ></div>
+                    </div>
+                    <div class="ml-3 text-slate-700 font-semibold">
+                      Shortlist
+                    </div>
+                  </label>
+                  <p
+                    id="shortlist-status"
+                    class="text-xs text-center mt-1 font-medium {% if registration.is_shortlisted %}text-green-600{% else %}text-slate-500{% endif %}"
+                  >
+                    {% if registration.is_shortlisted %}Shortlisted{% else %}Not
+                    Shortlisted{% endif %}
+                  </p>
+                </div>
+
+                <style>
+                  input:checked ~ .dot {
+                    transform: translateX(100%);
+                  }
+                  input:checked ~ .block {
+                    background-color: #736b8e; /* theme-primary */
+                  }
+                </style>
+              </div>
+
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center"
+              >
+                <div class="bg-slate-100 p-4 rounded-lg">
+                  <p
+                    class="text-xs font-medium text-slate-500 uppercase tracking-wider"
+                  >
+                    Your Score
+                  </p>
+                  <p
+                    class="text-3xl font-bold {% if status == 'Pass' %}text-green-600{% else %}text-red-600{% endif %} tracking-tight mt-1"
+                  >
+                    {{ percentage }}%
+                  </p>
+                </div>
+                <div class="bg-slate-100 p-4 rounded-lg">
+                  <p
+                    class="text-xs font-medium text-slate-500 uppercase tracking-wider"
+                  >
+                    Cutoff Score
+                  </p>
+                  <p
+                    class="text-3xl font-bold text-slate-600 tracking-tight mt-1"
+                  >
+                    {{ cutoff_score }}%
+                  </p>
+                </div>
+                <div class="bg-slate-100 p-4 rounded-lg">
+                  <p
+                    class="text-xs font-medium text-slate-500 uppercase tracking-wider"
+                  >
+                    Correct Answers
+                  </p>
+                  <p
+                    class="text-3xl font-bold text-green-600 tracking-tight mt-1"
+                  >
+                    {{ score }} / {{ total_questions }}
+                  </p>
+                </div>
+                <div class="bg-slate-100 p-4 rounded-lg">
+                  <p
+                    class="text-xs font-medium text-slate-500 uppercase tracking-wider"
+                  >
+                    Incorrect Answers
+                  </p>
+                  <p
+                    class="text-3xl font-bold text-red-600 tracking-tight mt-1"
+                  >
+                    {{ incorrect_answers }} / {{ total_questions }}
+                  </p>
+                </div>
+              </div>
+            </section>
+            <section class="mt-8">
+              <h2 class="text-lg font-semibold text-slate-800 mb-4">
+                Questions & Answers
+              </h2>
+
+              <div class="space-y-4">
+                {% for result in results %}
+                <div
+                  class="bg-white p-5 rounded-xl shadow-md border-l-4 {% if result.is_correct %}border-green-400{% else %}border-red-400{% endif %}"
+                >
+                  <div class="flex justify-between items-start gap-4">
+                    <p class="text-base font-semibold text-slate-800">
+                      {{ forloop.counter }}. {{ result.question_text|safe }}
+                    </p>
+                    {% if result.is_correct %}
+                    <div
+                      class="flex-shrink-0 flex items-center gap-1.5 text-green-700"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        class="w-5 h-5"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.06 0l4.001-5.498Z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                      <span class="font-medium text-sm">Correct</span>
+                    </div>
+                    {% else %}
+                    <div
+                      class="flex-shrink-0 flex items-center gap-1.5 text-red-700"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        class="w-5 h-5"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                      <span class="font-medium text-sm">Incorrect</span>
+                    </div>
+                    {% endif %}
+                  </div>
+                  <div class="mt-4 pl-1 space-y-3">
+                    <div>
+                      <p class="text-sm font-medium text-slate-500">
+                        Your Answer:
+                      </p>
+                      <p class="text-slate-700 mt-0.5 text-base">
+                        {{ result.user_answer|default:"(No answer)" }}
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-slate-500">
+                        Correct Answer:
+                      </p>
+                      <p class="text-slate-800 font-semibold mt-0.5 text-base">
+                        {{ result.correct_answer }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                {% empty %}
+                <div
+                  class="bg-yellow-50 border border-yellow-200 rounded-lg p-5 text-center text-yellow-800"
+                >
+                  No responses were found for this test.
+                </div>
+                {% endfor %}
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script>
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + "=")) {
+              cookieValue = decodeURIComponent(
+                cookie.substring(name.length + 1)
+              );
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const shortlistCheckbox = document.getElementById("shortlist-checkbox");
+        const shortlistStatusText = document.getElementById("shortlist-status");
+        const shortlistLabel = document.getElementById("shortlist-label");
+
+        if (shortlistCheckbox) {
+          shortlistCheckbox.addEventListener("change", function () {
+            const registrationId = this.dataset.registrationId;
+            // --- THIS IS THE KEY CHANGE TO MATCH THE URL ---
+            const url = `/registration/${registrationId}/toggle-shortlist/`;
+            // ------------------------------------------------
+            const csrftoken = getCookie("csrftoken");
+
+            // 1. Disable the toggle to prevent multiple clicks (Good practice!)
+            shortlistCheckbox.disabled = true;
+            shortlistLabel.classList.add("opacity-50", "cursor-wait");
+
+            fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken,
+              },
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  throw new Error("Network response was not ok");
+                }
+                return response.json();
+              })
+              .then((data) => {
+                if (data.status === "success") {
+                  // 2. Update UI based on the *actual* response from the server
+                  if (data.is_shortlisted) {
+                    shortlistStatusText.textContent = "Shortlisted";
+                    shortlistStatusText.classList.remove("text-slate-500");
+                    shortlistStatusText.classList.add("text-green-600");
+                  } else {
+                    shortlistStatusText.textContent = "Not Shortlisted";
+                    shortlistStatusText.classList.remove("text-green-600");
+                    shortlistStatusText.classList.add("text-slate-500");
+                  }
+                } else {
+                  // On failure, revert the checkbox to its previous state
+                  this.checked = !this.checked;
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+                // On any error, revert the checkbox
+                this.checked = !this.checked;
+              })
+              .finally(() => {
+                // 3. Re-enable the toggle regardless of the outcome
+                shortlistCheckbox.disabled = false;
+                shortlistLabel.classList.remove("opacity-50", "cursor-wait");
+              });
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,179 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Evaluation Template</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "theme-primary": "#736b8e",
+            "theme-dark": "#5f5778",
+            "theme-light": "#e5e3e9",
+            "gray-text": "#6B7280",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: "Inter", sans-serif; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-gray-800">
+  <div class="flex h-screen">
+    
+    {% include 'partials/sidebar.html' %}
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      
+      {% include 'partials/header.html' with page_title="Evaluation Master" %}
+
+      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6">
+        
+        <div class="container mx-auto max-w-3xl">
+<div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-theme-dark">Create Evaluation Template</h2>
+                
+                <a href="{% url 'evaluation_template_list' %}" 
+                   class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-theme-primary font-medium py-2 px-4 rounded shadow-sm transition duration-200 flex items-center text-sm">
+                    <i class="fas fa-list-ul mr-2 text-theme-primary"></i> View All Templates
+                </a>
+            </div>            
+            <form method="post" class="bg-white shadow-lg rounded-lg px-8 pt-6 pb-8 mb-4">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Template Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <p class="text-red-500 text-xs italic mt-1">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Cutoff Score</label>
+                        {{ form.cutoff_score }}
+                    </div>
+                </div>
+
+                <hr class="my-6 border-slate-200">
+                
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-theme-dark">Evaluation Parameters</h3>
+                    <button type="button" id="add-parameter-btn" class="bg-theme-primary hover:bg-theme-dark text-white text-sm font-bold py-2 px-4 rounded transition duration-200 shadow-sm">
+                        <i class="fas fa-plus mr-1"></i> Add Parameter
+                    </button>
+                </div>
+
+                {{ parameters.management_form }}
+                
+                <div id="parameter-form-list" class="space-y-3">
+                    {% for form in parameters %}
+                        <div class="parameter-row flex items-center gap-4 p-3 border border-slate-200 rounded-md bg-slate-50">
+                            <div class="flex-grow">
+                                <label class="block text-xs text-gray-500 mb-1 font-semibold">Parameter Name</label>
+                                {{ form.name }}
+                            </div>
+                            <div class="w-24">
+                                <label class="block text-xs text-gray-500 mb-1 font-semibold">Weight</label>
+                                {{ form.weight }}
+                            </div>
+                            
+                            {% for hidden in form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+
+                            {% if not forloop.first %}
+                                <button type="button" class="remove-form-btn text-red-400 hover:text-red-600 font-bold ml-2 p-1 transition">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            {% else %}
+                                <div class="w-6"></div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div id="empty-form" class="hidden" style="display: none;">
+                    <div class="parameter-row flex items-center gap-4 mt-3 p-3 border border-slate-200 rounded-md bg-slate-50">
+                        <div class="flex-grow">
+                            <label class="block text-xs text-gray-500 mb-1 font-semibold">Parameter Name</label>
+                            {{ parameters.empty_form.name }}
+                        </div>
+                        <div class="w-24">
+                            <label class="block text-xs text-gray-500 mb-1 font-semibold">Weight</label>
+                            {{ parameters.empty_form.weight }}
+                        </div>
+                        <button type="button" class="remove-form-btn text-red-400 hover:text-red-600 font-bold ml-2 p-1 transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end mt-8 gap-4">
+                    <a href="{% url 'evaluation_template_list' %}" class="text-slate-500 hover:text-slate-700 font-medium text-sm transition">
+                        Cancel
+                    </a>
+                    <button class="bg-theme-primary hover:bg-theme-dark text-white font-bold py-2.5 px-6 rounded shadow-md transition duration-200" type="submit">
+                        Save Template
+                    </button>
+                </div>
+            </form>
+        </div>
+
+      </main>
+      </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtn = document.getElementById('add-parameter-btn');
+        const formList = document.getElementById('parameter-form-list');
+        const emptyFormDiv = document.getElementById('empty-form'); // Select wrapper
+        const totalFormsInput = document.getElementById('id_parameters-TOTAL_FORMS');
+
+        addBtn.addEventListener('click', function() {
+            // 1. Get the HTML inside the hidden div
+            const emptyFormHtml = emptyFormDiv.innerHTML;
+            
+            // 2. Get current count
+            const currentFormCount = parseInt(totalFormsInput.value);
+            
+            // 3. Replace __prefix__ with the new index
+            const newFormHtml = emptyFormHtml.replace(/__prefix__/g, currentFormCount);
+            
+            // 4. Append to the list
+            formList.insertAdjacentHTML('beforeend', newFormHtml);
+            
+            // 5. Update Total Forms count
+            totalFormsInput.value = currentFormCount + 1;
+        });
+
+        // Event Delegation for Remove Button (Includes handling icon click)
+        formList.addEventListener('click', function(e) {
+            // Check if clicked element is the button or the icon inside it
+            if (e.target.closest('.remove-form-btn')) {
+                const row = e.target.closest('.parameter-row');
+                if(row) {
+                    row.remove();
+                    // Note: In a production app, we might need to update indices or TOTAL_FORMS, 
+                    // but for simple appending, Django handles "missing" indices fine on save.
+                }
+            }
+        });
+    });
+  </script>
+
+</body>
+</html>

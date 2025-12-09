@@ -1,0 +1,768 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title|default:"Admin Dashboard" }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "theme-primary": "#736b8e",
+            "theme-dark": "#5f5778",
+            "theme-light": "#e5e3e9",
+            "gray-text": "#6B7280",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+
+    .toast {
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: #736b8e;
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+      background-color: #736b8e;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-gray-800">
+  <div class="flex h-screen">
+    {% include 'partials/sidebar.html' %}
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      {% include 'partials/header.html' with page_title="" %}
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 flex-shrink-0">
+              Question Papers
+            </h2>
+            <div class="flex-1 flex flex-col sm:flex-row justify-start sm:justify-center items-center gap-4 w-full">
+
+              <div class="relative w-full sm:w-48">
+                <select id="filter-status"
+                  class="w-full p-2 pr-10 border border-gray-300 rounded-lg bg-white text-sm focus:ring-theme-primary focus:border-theme-primary appearance-none">
+                  <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Statuses</option>
+                  <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                  <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
+
+              <div class="relative w-full sm:w-48">
+                <select id="filter-experience"
+                  class="w-full p-2 pr-10 border border-gray-300 rounded-lg bg-white text-sm focus:ring-theme-primary focus:border-theme-primary appearance-none">
+                  <option value="all" {% if selected_experience == 'all' %}selected{% endif %}>All Levels</option>
+                  <option value="0-2" {% if selected_experience == '0-2' %}selected{% endif %}>Beginner (0-2 Years)
+                  </option>
+                  <option value="3-5" {% if selected_experience == '3-5' %}selected{% endif %}>Intermediate (3-5 Years)
+                  </option>
+                  <option value="6+" {% if selected_experience == '6+' %}selected{% endif %}>Advanced (6+ Years)</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                  </svg>
+                </div>
+              </div>
+
+            </div>
+
+            <a href="{% url 'generate_questions' %}"
+              class="w-full sm:w-auto bg-theme-primary text-white text-center font-semibold py-2 px-5 rounded-lg hover:bg-theme-dark transition-all duration-300 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+              <i class="fas fa-plus mr-2"></i>Create Paper
+            </a>
+          </div>
+          <div class="space-y-4" id="papers-container">
+            {% for paper in papers %}
+            <div id="paper-card-{{ paper.id }}"
+              class="paper-card bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-lg hover:border-theme-primary transition-all duration-300"
+              data-status="{% if paper.is_public_active %}active{% else %}inactive{% endif %}"
+              data-experience="{{ paper.experience_level|default:'beginner'|lower }}">
+              <div class="flex justify-between items-start">
+                <a href="{% url 'paper_detail' paper.id %}" class="flex-grow">
+                  <div class="flex items-center mb-2">
+                    <span id="status-dot-{{ paper.id }}"
+                      class="h-3 w-3 rounded-full mr-3 {% if paper.is_public_active %} bg-green-500 {% else %} bg-gray-400 {% endif %}"
+                      title="{% if paper.is_public_active %}Public link is Active{% else %}Public link is Inactive{% endif %}"></span>
+                    <h3 class="font-semibold text-lg text-gray-900">
+                      {{ paper.title }}
+                    </h3>
+                  </div>
+                  <p class="text-xs sm:text-sm text-gray-text mt-1 pl-6">
+                    <i class="fas fa-clock mr-1 opacity-70"></i>
+                    Duration: {{ paper.duration }} min &bull;
+                    <i class="fas fa-list-ol ml-2 mr-1 opacity-70"></i>
+                    {{ paper.total_questions }} Questions &bull;
+                    <i class="fas fa-users ml-2 mr-1 opacity-70"></i>
+                    Participants: {{ paper.participant_count }}
+                  </p>
+                </a>
+<div class="flex items-center space-x-1 z-10 relative flex-shrink-0">
+                  <button data-paper-title="{{ paper.title }}" data-paper-id="{{ paper.id }}"
+                    title="Invite Candidate"
+                    class="invite-button p-2 text-gray-500 rounded-full hover:bg-theme-light hover:text-green-500 focus:outline-none">
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                  <button data-paper-title="{{ paper.title }}" data-share-link="{% url 'take_paper' paper.id %}"
+                    data-is-public="{{ paper.is_public_active|yesno:'true,false' }}" data-paper-id="{{ paper.id }}"
+                    title="Share Paper"
+                    class="share-button p-2 text-gray-500 rounded-full hover:bg-theme-light hover:text-theme-primary focus:outline-none">
+                    <i class="fas fa-share-alt"></i>
+                  </button>
+                  
+                  <button data-paper-id="{{ paper.id }}" data-paper-title="{{ paper.title }}" title="Deactivate Paper"
+                    class="deactivate-paper-button p-2 text-gray-500 rounded-full hover:bg-red-100 hover:text-red-600 focus:outline-none">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+                <!-- <div class="flex items-center space-x-1 z-10 relative flex-shrink-0">
+                  <button data-paper-title="{{ paper.title }}" data-share-link="{% url 'take_paper' paper.id %}"
+                    data-is-public="{{ paper.is_public_active|yesno:'true,false' }}" data-paper-id="{{ paper.id }}"
+                    title="Share Paper"
+                    class="share-button p-2 text-gray-500 rounded-full hover:bg-theme-light hover:text-theme-primary focus:outline-none">
+                    <i class="fas fa-share-alt"></i>
+                  </button>
+                  
+                  <button data-paper-id="{{ paper.id }}" data-paper-title="{{ paper.title }}" title="Deactivate Paper"
+                    class="deactivate-paper-button p-2 text-gray-500 rounded-full hover:bg-red-100 hover:text-red-600 focus:outline-none">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div> -->
+              </div>
+            </div>
+            {% empty %}
+            <div class="bg-white p-12 rounded-lg shadow-sm border-2 border-dashed border-gray-300 text-center mt-8">
+              <i class="fas fa-file-alt fa-3x text-gray-300 mb-4"></i>
+              <h3 class="text-xl font-semibold text-gray-700">
+                No Papers Found
+              </h3>
+              <p class="text-gray-text mt-2">
+                Click on "Create Paper" to get started!
+              </p>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mt-8 flex justify-center items-center">
+            {% if papers.has_other_pages %}
+            <nav class="flex items-center space-x-2" aria-label="Pagination">
+              {% if papers.has_previous %}
+              <a href="?page={{ papers.previous_page_number }}"
+                class="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                <i class="fas fa-chevron-left mr-1"></i>
+                Prev
+              </a>
+              {% else %}
+              <span
+                class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed">
+                <i class="fas fa-chevron-left mr-1"></i>
+                Prev
+              </span>
+              {% endif %}
+
+              {% for i in papers.paginator.page_range %}
+              {% if papers.number == i %}
+              <span aria-current="page"
+                class="px-4 py-2 text-sm font-bold text-white bg-theme-primary border border-theme-dark rounded-lg z-10">
+                {{ i }}
+              </span>
+              {% else %}
+              <a href="?page={{ i }}"
+                class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                {{ i }}
+              </a>
+              {% endif %}
+              {% endfor %}
+
+              {% if papers.has_next %}
+              <a href="?page={{ papers.next_page_number }}"
+                class="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                Next
+                <i class="fas fa-chevron-right ml-1"></i>
+              </a>
+              {% else %}
+              <span
+                class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed">
+                Next
+                <i class="fas fa-chevron-right ml-1"></i>
+              </span>
+              {% endif %}
+            </nav>
+            {% endif %}
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+
+  </div>
+  </main>
+  </div>
+  </div>
+
+  <div id="share-modal"
+    class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
+    <div id="share-modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto">
+      <div class="flex justify-between items-center p-5 border-b border-gray-200">
+        <h3 class="text-xl font-bold text-gray-800">Share Paper</h3>
+        <button id="close-share-modal-top" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times fa-lg"></i>
+        </button>
+      </div>
+      <div class="p-6 space-y-5">
+        <p class="text-sm text-gray-text font-medium">
+          Anyone with this link can attempt the "<strong id="modal-paper-title"></strong>" paper.
+        </p>
+        <div class="relative">
+          <input type="text" id="share-link-input" readonly
+            class="w-full p-3 pr-28 border border-gray-300 rounded-lg bg-slate-50 text-sm focus:ring-theme-primary focus:border-theme-primary" />
+          <button id="copy-link-button"
+            class="absolute right-1 top-1/2 -translate-y-1/2 bg-theme-primary text-white text-sm font-medium py-2 px-4 rounded-lg hover:bg-theme-dark transition-colors">
+            Copy Link
+          </button>
+        </div>
+        <div class="pt-5 border-t border-gray-100">
+          <div class="flex justify-between items-center">
+            <div>
+              <h4 class="font-semibold text-gray-800">Public Link Access</h4>
+              <p class="text-xs text-gray-text">
+                Controls if the link is active or not.
+              </p>
+            </div>
+            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+              <input type="checkbox" name="toggle" id="public-link-toggle"
+                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+              <label for="public-link-toggle"
+                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-50 rounded-b-xl flex justify-end">
+        <button id="close-share-modal-footer"
+          class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm-modal"
+    class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
+    <div id="confirm-modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto">
+      <div class="p-6 text-center">
+        <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-4"></i>
+        <h3 id="confirm-modal-title" class="text-lg font-bold text-gray-800">
+          Confirm Action
+        </h3>
+        <p id="confirm-modal-text" class="text-sm text-gray-text mt-2">
+          Are you sure?
+        </p>
+      </div>
+      <div class="px-5 py-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+        <button id="confirm-modal-cancel"
+          class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
+          Cancel
+        </button>
+        <button id="confirm-modal-confirm"
+          class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+<div id="invite-modal"
+    class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden z-50 flex justify-center items-center p-4">
+    <div id="invite-modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto">
+      <div class="flex justify-between items-center p-5 border-b border-gray-200">
+        <h3 class="text-xl font-bold text-gray-800">Invite Candidate</h3>
+        <button id="close-invite-modal-top" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times fa-lg"></i>
+        </button>
+      </div>
+      <form id="invite-form" onsubmit="return false;">
+        {% csrf_token %}
+        <div class="p-6 space-y-5">
+          <p class="text-sm text-gray-text font-medium">
+            Send a direct invitation email for "<strong id="invite-modal-paper-title"></strong>".
+          </p>
+
+          <div class="form-group">
+            <label for="invite-email-input" class="block text-sm font-semibold text-gray-700 mb-0.5">
+              Candidate Email
+            </label>
+            <input type="email" name="email" id="invite-email-input" required
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-theme-primary focus:border-theme-primary sm:text-sm"
+              placeholder="e.g., candidate@example.com" />
+            <div id="invite-email-error" class="error-text hidden"></div>
+          </div>
+          
+          <input type="hidden" name="paper_id" id="invite-paper-id-input" value="">
+        </div>
+        <div class="px-5 py-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+          <button id="close-invite-modal-footer" type="button"
+            class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
+            Cancel
+          </button>
+          <button type="submit" id="send-invite-button"
+            class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+            <i class="fas fa-paper-plane mr-2"></i>Send Invitation
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="fixed top-5 right-5 z-[100] space-y-3"></div>
+
+  <script>
+    // --- Reusable Toast Notification Function ---
+    function showToast(message, type = "success") {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      const bgColor = type === "success" ? "bg-green-500" : "bg-red-500";
+      const icon =
+        type === "success"
+          ? '<i class="fas fa-check-circle"></i>'
+          : '<i class="fas fa-times-circle"></i>';
+      toast.className = `toast text-white text-sm font-semibold p-3 rounded-lg shadow-lg flex items-center space-x-3 ${bgColor}`;
+      toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.add("show"), 10);
+      setTimeout(() => {
+        toast.classList.remove("show");
+        toast.addEventListener("transitionend", () => toast.remove());
+      }, 3000);
+    }
+
+    // --- Reusable Confirmation Modal Function ---
+    function showConfirmModal(title, message, onConfirm) {
+      const modal = document.getElementById("confirm-modal");
+      const modalContent = document.getElementById("confirm-modal-content");
+      document.getElementById("confirm-modal-title").textContent = title;
+      document.getElementById("confirm-modal-text").innerHTML = message;
+
+      const confirmBtn = document.getElementById("confirm-modal-confirm");
+      const cancelBtn = document.getElementById("confirm-modal-cancel");
+
+      const closeModal = () => modal.classList.add("hidden");
+
+      const confirmHandler = () => {
+        onConfirm();
+        closeModal();
+      };
+
+      const newConfirmBtn = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+      newConfirmBtn.addEventListener("click", confirmHandler, { once: true });
+      cancelBtn.addEventListener("click", closeModal, { once: true });
+
+      modal.classList.remove("hidden");
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.startsWith(name + "=")) {
+            cookieValue = decodeURIComponent(
+              cookie.substring(name.length + 1)
+            );
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      // Sidebar toggle
+      const sidebar = document.getElementById("sidebar");
+      const toggleButton = document.getElementById("sidebar-toggle");
+      const sidebarLogo = document.getElementById("sidebar-logo");
+      const sidebarTexts = document.querySelectorAll(".sidebar-text");
+      const sidebarHeader = document.getElementById("sidebar-header");
+
+      if (toggleButton) {
+        toggleButton.addEventListener("click", () => {
+          sidebar.classList.toggle("w-64");
+          sidebar.classList.toggle("w-20");
+          sidebarLogo.classList.toggle("hidden");
+          sidebarHeader.classList.toggle("justify-between");
+          sidebarHeader.classList.toggle("justify-center");
+          sidebarTexts.forEach((text) => {
+            text.classList.toggle("hidden");
+          });
+        });
+      }
+
+      // Profile dropdown
+      const userMenuButton = document.getElementById("user-menu-button");
+      const userMenu = document.getElementById("user-menu");
+
+      if (userMenuButton && userMenu) {
+        userMenuButton.addEventListener("click", (event) => {
+          userMenu.classList.toggle("hidden");
+          event.stopPropagation();
+        });
+
+        document.addEventListener("click", (event) => {
+          if (
+            !userMenu.classList.contains("hidden") &&
+            !userMenuButton.contains(event.target)
+          ) {
+            userMenu.classList.add("hidden");
+          }
+        });
+      }
+    });
+
+    // --- START: UPDATED FILTER LOGIC ---
+    const filterStatus = document.getElementById("filter-status");
+    const filterExperience = document.getElementById("filter-experience");
+    const paperCards = document.querySelectorAll(".paper-card");
+    const noResultsMessage = document.getElementById("no-results-message");
+
+    function applyFilters() {
+      const statusValue = filterStatus.value;
+      const experienceValue = filterExperience.value;
+      // Build the new URL with query params
+      const params = new URLSearchParams(window.location.search);
+      params.set("status", statusValue);
+      params.set("experience", experienceValue);
+      params.delete("page"); // Reset to first page on filter change
+      window.location.search = params.toString();
+    }
+
+    // Add event listeners to the filter inputs
+    if (filterStatus) filterStatus.addEventListener("change", applyFilters);
+    if (filterExperience) filterExperience.addEventListener("change", applyFilters);
+    // --- END: UPDATED FILTER LOGIC ---
+
+    const shareModal = document.getElementById("share-modal");
+    const closeShareModalButtons = document.querySelectorAll(
+      "#close-share-modal-top, #close-share-modal-footer"
+    );
+
+    // --- Open Share Modal ---
+    document.querySelectorAll(".share-button").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const shareLink = button.dataset.shareLink;
+        const fullShareLink = window.location.origin + shareLink;
+        document.getElementById("share-link-input").value = fullShareLink;
+        document.getElementById("modal-paper-title").textContent =
+          button.dataset.paperTitle;
+
+        const toggle = document.getElementById("public-link-toggle");
+        toggle.checked = button.dataset.isPublic === "true";
+        toggle.dataset.paperId = button.dataset.paperId;
+
+        shareModal.classList.remove("hidden");
+      });
+    });
+
+    // --- Close Share Modal ---
+    const closeShareModal = () => shareModal.classList.add("hidden");
+    closeShareModalButtons.forEach((btn) =>
+      btn.addEventListener("click", closeShareModal)
+    );
+
+    // --- Copy Link Button ---
+    document
+      .getElementById("copy-link-button")
+      .addEventListener("click", (e) => {
+        const linkInput = document.getElementById("share-link-input");
+        navigator.clipboard.writeText(linkInput.value).then(() => {
+          e.target.textContent = "Copied!";
+          showToast("Link copied to clipboard!");
+          setTimeout(() => {
+            e.target.textContent = "Copy Link";
+          }, 2000);
+        });
+      });
+
+    // --- REFACTORED: Public Link Toggle Switch Logic ---
+    const publicLinkToggle = document.getElementById("public-link-toggle");
+    publicLinkToggle.addEventListener("change", () => {
+      const paperId = publicLinkToggle.dataset.paperId;
+      const isChecked = publicLinkToggle.checked;
+      const toggleUrl = `/api/paper/${paperId}/toggle-public/`;
+
+      publicLinkToggle.disabled = true;
+
+      fetch(toggleUrl, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.status === "success") {
+            const message = data.is_public_active
+              ? "Public link activated!"
+              : "Public link deactivated!";
+            showToast(message);
+
+            // Update status dot on the main page
+            const statusDot = document.getElementById(
+              `status-dot-${paperId}`
+            );
+            statusDot.classList.toggle("bg-green-500", data.is_public_active);
+            statusDot.classList.toggle("bg-gray-400", !data.is_public_active);
+
+            // Update the data attribute on the share button for consistency
+            const shareButton = document.querySelector(
+              `.share-button[data-paper-id='${paperId}']`
+            );
+            shareButton.dataset.isPublic = data.is_public_active;
+          } else {
+            throw new Error(data.message || "Failed to update.");
+          }
+        })
+        .catch((error) => {
+          showToast("An error occurred. Please try again.", "error");
+          publicLinkToggle.checked = !isChecked; // Revert toggle on error
+        })
+        .finally(() => {
+          publicLinkToggle.disabled = false;
+        });
+    });
+
+    // --- NEW: Deactivate Paper Logic ---
+    // --- Deactivate Paper Logic ---
+    document
+      .querySelectorAll(".deactivate-paper-button")
+      .forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const paperId = button.dataset.paperId;
+          const paperTitle = button.dataset.paperTitle;
+
+          showConfirmModal(
+            "Deactivate Paper?",
+            `Are you sure you want to deactivate "<strong>${paperTitle}</strong>"? This action cannot be undone.`,
+            () => {
+              const card = document.getElementById(`paper-card-${paperId}`);
+              if (card) {
+                card.style.transition = "opacity 0.5s ease";
+                card.style.opacity = "0.4";
+              }
+
+              // ✨ REPLACED FAKE CALL WITH REAL FETCH REQUEST ✨
+              const deactivateUrl = `/api/paper/${paperId}/deactivate/`;
+
+              fetch(deactivateUrl, {
+                method: "POST",
+                headers: {
+                  "X-CSRFToken": getCookie("csrftoken"), // Important for security
+                  "Content-Type": "application/json",
+                },
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.status === "success") {
+                    // On success, remove the card from the page
+                    if (card) {
+                      card.remove();
+                    }
+                    showToast(data.message, "success");
+                  } else {
+                    // If the backend sends an error, show it
+                    showToast(data.message || "An error occurred.", "error");
+                    if (card) {
+                      card.style.opacity = "1"; // Restore opacity on failure
+                    }
+                  }
+                })
+                .catch((error) => {
+                  // Handle network errors
+                  console.error("Deactivation Error:", error);
+                  showToast(
+                    "Could not connect to the server. Please try again.",
+                    "error"
+                  );
+                  if (card) {
+                    card.style.opacity = "1";
+                  }
+                });
+            }
+          );
+        });
+      });
+  // ... inside the main <script> tag ...
+
+    // --- Invite Modal Logic Variables ---
+    const inviteModal = document.getElementById("invite-modal");
+    const inviteForm = document.getElementById("invite-form");
+    const inviteEmailInput = document.getElementById("invite-email-input");
+    const invitePaperIdInput = document.getElementById("invite-paper-id-input");
+    const inviteEmailError = document.getElementById("invite-email-error");
+    const sendInviteButton = document.getElementById("send-invite-button");
+    const closeInviteModalButtons = document.querySelectorAll(
+      "#close-invite-modal-top, #close-invite-modal-footer"
+    );
+
+    const closeInviteModal = () => {
+      inviteModal.classList.add("hidden");
+      inviteEmailError.classList.add("hidden");
+      inviteEmailInput.classList.remove("invalid");
+      inviteEmailInput.value = ""; // Clear the email field
+      sendInviteButton.textContent = 'Send Invitation'; // Reset button text
+      sendInviteButton.disabled = false; // Enable button
+    };
+
+    // --- Open Invite Modal ---
+    document.querySelectorAll(".invite-button").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const paperId = button.dataset.paperId;
+        const paperTitle = button.dataset.paperTitle;
+
+        document.getElementById("invite-modal-paper-title").textContent = paperTitle;
+        invitePaperIdInput.value = paperId;
+
+        inviteModal.classList.remove("hidden");
+        inviteEmailInput.focus();
+      });
+    });
+
+    // --- Close Invite Modal ---
+    closeInviteModalButtons.forEach((btn) =>
+      btn.addEventListener("click", closeInviteModal)
+    );
+    
+    // --- Invite Form Submission (AJAX) ---
+    inviteForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      let email = inviteEmailInput.value.trim();
+      let paper_id = invitePaperIdInput.value;
+      
+      // Basic client-side email format validation
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        inviteEmailInput.classList.add("invalid");
+        inviteEmailError.textContent = "Please enter a valid email address.";
+        inviteEmailError.classList.remove("hidden");
+        return;
+      }
+
+      inviteEmailInput.classList.remove("invalid");
+      inviteEmailError.classList.add("hidden");
+
+      sendInviteButton.disabled = true;
+      sendInviteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+
+      const inviteUrl = "{% url 'invite_candidate' %}"; 
+
+      fetch(inviteUrl, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: email, paper_id: paper_id }),
+      })
+      .then((res) => {
+        if (res.status === 400) {
+          // Handle validation errors from the backend
+          return res.json().then(data => {
+            if (data.errors && data.errors.email) {
+              inviteEmailInput.classList.add("invalid");
+              inviteEmailError.textContent = data.errors.email[0];
+              inviteEmailError.classList.remove("hidden");
+            } else {
+               showToast(data.message || "Invitation failed due to validation error.", "error");
+            }
+            throw new Error("Validation Failed"); // Break the chain
+          });
+        }
+        if (!res.ok) {
+           throw new Error("Server error occurred.");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status === "success") {
+          showToast(data.message, "success");
+          closeInviteModal();
+          
+          // CRITICAL: Update the dashboard status dot if the public status changed
+          const statusDot = document.getElementById(`status-dot-${paper_id}`);
+          if (statusDot) {
+             statusDot.classList.toggle("bg-green-500", data.is_public_active);
+             statusDot.classList.toggle("bg-gray-400", !data.is_public_active);
+          }
+          
+        } else {
+          showToast(data.message || "Invitation failed.", "error");
+        }
+      })
+      .catch((error) => {
+        if (error.message !== "Validation Failed") { // Ignore validation-only errors
+            console.error("Invite Error:", error);
+            showToast("An unexpected error occurred. Please try again.", "error");
+        }
+      })
+      .finally(() => {
+        sendInviteButton.disabled = false;
+        sendInviteButton.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Invitation';
+      });
+    });
+    // ... rest of the script ...
+  </script>
+</body>
+
+</html>

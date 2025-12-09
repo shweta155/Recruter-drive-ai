@@ -1,0 +1,386 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Job Post</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar style for modern browsers */
+        .form-container::-webkit-scrollbar { width: 8px; }
+        .form-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .form-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Style for invalid fields */
+        .input-error {
+            border-color: #ef4444 !important; /* Tailwind's red-500 */
+        }
+        /* Custom focus style for inputs */
+        .custom-focus:focus {
+            border-color: #4f46e5; /* indigo-600 */
+            box-shadow: 0 0 0 1px #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="flex h-screen">
+        {% include 'partials/sidebar.html' %}
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'partials/header.html' with page_title="New Recruitment Drive" %}
+            
+            <main class="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10">
+                
+                <div class="max-w-5xl mx-auto bg-white shadow-2xl rounded-xl overflow-hidden">
+                    
+                    <header class="bg-indigo-700 p-6 border-b-4 border-indigo-500">
+                        <h1 class="text-3xl font-extrabold text-white flex items-center">
+                            <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            New Job Post Configuration
+                        </h1>
+                        <p class="text-indigo-200 mt-2 text-lg">Define all mandatory and optional fields for the job opening and its flow.</p>
+                    </header>
+            
+                    <form id="job-post-form" class="p-8 md:p-10 form-container" method="post" onsubmit="return validateForm(event)">
+                      {% csrf_token %}
+                        
+                        <section class="mb-10 border-b pb-8 border-gray-200">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                                 Core Job Details
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                <div>
+                                    <label for="title" class="block text-sm font-semibold text-gray-700">
+                                        Job Title <span class="text-red-500 font-bold ml-1">*</span>
+                                    </label>
+                                    <input type="text" id="title" name="title" required
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150">
+                                    <div id="error-title" class="text-sm text-red-500 mt-1 hidden"></div>
+                                </div>
+                                <div>
+                                    <label for="department" class="block text-sm font-semibold text-gray-700">Department</label>
+                                    <input type="text" id="department" name="department"
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150">
+                                </div>
+                                <div>
+                                    <label for="location" class="block text-sm font-semibold text-gray-700">Job Location</label>
+                                    <input type="text" id="location" name="location"
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150">
+                                </div>
+                                <div>
+                                    <label for="job_type" class="block text-sm font-semibold text-gray-700">
+                                        Job Type <span class="text-red-500 font-bold ml-1">*</span>
+                                    </label>
+                                    <select id="job_type" name="job_type" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150 bg-white">
+                                        <option value="Full-Time">Full-Time</option>
+                                        <option value="Part-Time">Part-Time</option>
+                                        <option value="Contract">Contract</option>
+                                        <option value="Internship">Internship</option>
+                                    </select>
+                                    <div id="error-job_type" class="text-sm text-red-500 mt-1 hidden"></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 mb-10">
+                                <label for="description" class="block text-sm font-semibold text-gray-700">
+                                    Job Description <span class="text-red-500 font-bold ml-1">*</span>
+                                </label>
+                                <textarea id="description" name="description" rows="6" required
+                                          class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150"></textarea>
+                                <div id="error-description" class="text-sm text-red-500 mt-1 hidden"></div>
+                            </div>
+                            
+                            <h3 class="text-xl font-semibold text-gray-800 mb-6 flex items-center border-b border-gray-100 pb-3">
+                                <span class="mr-2 text-indigo-600">⚙️</span> Application & Flow Settings
+                            </h3>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                                <div>
+                                    <label for="pay_scale" class="block text-sm font-semibold text-gray-700">Pay Scale / Salary Range</label>
+                                    <input type="text" id="pay_scale" name="pay_scale"
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150"
+                                           placeholder="e.g., ₹8LPA - ₹12LPA ">
+                                </div>
+                                <div>
+                                    <label for="end_date" class="block text-sm font-semibold text-gray-700">Application End Date</label>
+                                    <input type="date" id="end_date" name="end_date"
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150">
+                                </div>
+                                <div>
+                                    <label for="status" class="block text-sm font-semibold text-gray-700">
+                                        Status <span class="text-red-500 font-bold ml-1">*</span>
+                                    </label>
+                                    <select id="status" name="status" required
+                                            class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150 bg-white">
+                                        <option value="Open">Open</option>
+                                        <option value="Closed">Closed</option>
+                                        <option value="Archived">Archived</option>
+                                    </select>
+                                    <div id="error-status" class="text-sm text-red-500 mt-1 hidden"></div>
+                                </div>
+
+                                <div>
+                                    <label for="question_paper" class="block text-sm font-semibold text-gray-700">Written Test Question Paper</label>
+                                    <div class="flex items-start space-x-4 mt-1">
+                                        <select id="question_paper" name="question_paper"
+                                                class="block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150 bg-white">
+                                            <option value="" selected>Select an existing Question Paper </option>
+                                            
+                                            {% for paper in question_papers %}
+                                                <option value="{{ paper.id }}">
+                                                    Paper ID: {{ paper.id }} ({{ paper.title }})
+                                                </option>
+                                            {% endfor %}
+                                            
+                                        </select>
+                                        
+                                        <a href="{% url 'generate_questions' %}" target="_blank"
+                                           class="flex-shrink-0 px-4 py-3 border border-transparent text-sm font-medium rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+                                            <span class="hidden sm:inline">➕ Create Written Test</span>
+                                            <span class="sm:hidden">➕ Create</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-span-full bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6 mb-8">
+                                <div class="flex justify-between items-end mb-4">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800">Interview Process Flow</h3>
+                                        <p class="text-xs text-gray-500">Define the rounds in the order they occur (e.g., Screening -> Technical -> HR).</p>
+                                    </div>
+                                    
+                                    <a href="{% url 'round_master_create' %}" target="_blank" 
+                                       class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        Create New Round Type
+                                    </a>
+                                </div>
+
+                                {{ rounds_formset.management_form }}
+
+                                <div id="rounds-container" class="space-y-3">
+                                    {% for form in rounds_formset %}
+                                        <div class="round-row flex items-center space-x-4 bg-white p-3 rounded shadow-sm border border-gray-200">
+                                            {% for hidden in form.hidden_fields %}
+                                                {{ hidden }}
+                                            {% endfor %}
+
+                                            <span class="round-number font-bold text-gray-400 text-xl">#{{ forloop.counter }}</span>
+
+                                            <div class="flex-1">
+                                                {{ form.round_master }}
+                                                {% if form.round_master.errors %}
+                                                    <div class="text-red-500 text-xs">{{ form.round_master.errors }}</div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="hidden">
+                                                {{ form.DELETE }}
+                                            </div>
+                                            
+                                            {% if rounds_formset.can_delete %}
+                                            <button type="button" class="delete-round text-red-500 hover:bg-red-50 p-2 rounded-full transition" title="Remove Round">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+
+                                <button type="button" id="add-round-btn" class="mt-4 flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-800 focus:outline-none">
+                                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    Add Another Round
+                                </button>
+                            </div>
+                            </section>
+            
+                        <section class="mb-10 pb-4">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                                <span class="mr-3 text-indigo-600">✨</span> Candidate Requirements
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div>
+                                    <label for="experience_min" class="block text-sm font-semibold text-gray-700">
+                                        Experience Min (Years) <span class="text-red-500 font-bold ml-1">*</span>
+                                    </label>
+                                    <input type="number" id="experience_min" name="experience_min" value="0" min="0" required
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150">
+                                    <div id="error-experience_min" class="text-sm text-red-500 mt-1 hidden"></div>
+                                </div>
+                                <div>
+                                    <label for="experience_max" class="block text-sm font-semibold text-gray-700">
+                                        Experience Max (Years) <span class="text-red-500 font-bold ml-1">*</span>
+                                    </label>
+                                    <input type="number" id="experience_max" name="experience_max" value="5" min="0" required
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150">
+                                    <div id="error-experience_max" class="text-sm text-red-500 mt-1 hidden"></div>
+                                </div>
+                                <div>
+                                    <label for="positions_available" class="block text-sm font-semibold text-gray-700">
+                                        Positions Available <span class="text-red-500 font-bold ml-1">*</span>
+                                    </label>
+                                    <input type="number" id="positions_available" name="positions_available" value="1" min="1" required
+                                           class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150">
+                                    <div id="error-positions_available" class="text-sm text-red-500 mt-1 hidden"></div>
+                                </div>
+                            </div>
+                            <div class="mt-8">
+                                <label for="skills_required" class="block text-sm font-semibold text-gray-700">Skills Required (Comma separated)</label>
+                                <textarea id="skills_required" name="skills_required" rows="3"
+                                          class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 custom-focus outline-none transition duration-150"
+                                          placeholder="e.g., Python, Django, PostgreSQL, REST APIs"></textarea>
+                                <p class="mt-2 text-xs text-gray-500">
+                                    Specify key skills needed for this role, separated by commas.
+                                </p>
+                            </div>
+                        </section>
+                        
+                        <hr class="my-10 border-gray-300">
+            
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="px-8 py-4 text-lg font-bold rounded-lg shadow-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition duration-300 transform hover:scale-[1.02]">
+                                💾 Save & Publish Job Post
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                </main>
+        </div>
+    </div>
+
+    <script>
+        // List of all required input fields' IDs
+        // NOTE: 'total_rounds' Removed from here
+        const requiredFields = [
+            'title', 'job_type', 'description', 
+            'experience_min', 'experience_max', 'positions_available', 
+            'status'
+        ];
+
+        function validateForm(event) {
+            let isValid = true;
+            
+            // 1. Clear previous errors and styling
+            requiredFields.forEach(fieldId => {
+                const inputElement = document.getElementById(fieldId);
+                const errorElement = document.getElementById(`error-${fieldId}`);
+                
+                inputElement.classList.remove('input-error');
+                if(errorElement) {
+                    errorElement.classList.add('hidden');
+                    errorElement.innerHTML = '';
+                }
+            });
+
+            // 2. Check each required field for emptiness
+            requiredFields.forEach(fieldId => {
+                const inputElement = document.getElementById(fieldId);
+                const errorElement = document.getElementById(`error-${fieldId}`);
+                
+                if (!inputElement.value || inputElement.value.trim() === '') {
+                    isValid = false;
+                    
+                    inputElement.classList.add('input-error');
+                    if(errorElement) {
+                        errorElement.classList.remove('hidden');
+                        
+                        const labelElement = inputElement.previousElementSibling;
+                        let labelText = labelElement ? labelElement.textContent.replace('*', '').trim() : fieldId;
+                        errorElement.innerHTML = `**${labelText}** field is required.`;
+                    }
+                }
+            });
+            
+            // 3. UX Validation: Check Experience Min vs Max (Critical UX Check)
+            const expMin = document.getElementById('experience_min');
+            const expMax = document.getElementById('experience_max');
+            const errorExpMax = document.getElementById('error-experience_max');
+
+            if (expMin && expMax && errorExpMax) {
+                const minVal = parseFloat(expMin.value);
+                const maxVal = parseFloat(expMax.value);
+
+                if (!isNaN(minVal) && !isNaN(maxVal) && minVal > maxVal) {
+                    isValid = false;
+                    expMax.classList.add('input-error');
+                    errorExpMax.classList.remove('hidden');
+                    errorExpMax.innerHTML = `Max Experience cannot be less than Min Experience.`;
+                }
+            }
+
+
+            // 4. Prevent form submission if not valid
+            if (!isValid) {
+                event.preventDefault(); // Stop the form from submitting
+                // Scroll to the top error if necessary
+                const firstInvalidField = document.querySelector('.input-error');
+                if (firstInvalidField) {
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            return isValid;
+        }
+
+        // --- JavaScript to handle Adding/Removing Rounds Dynamically ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('rounds-container');
+            const addButton = document.getElementById('add-round-btn');
+            const totalForms = document.getElementById('id_rounds-TOTAL_FORMS'); // Django management form ID
+
+            // Logic to Add New Round
+            addButton.addEventListener('click', function() {
+                const formCount = parseInt(totalForms.value);
+                // Clone the first row
+                const firstRow = container.querySelector('.round-row');
+                const newRow = firstRow.cloneNode(true);
+                
+                // Update regex to replace ID numbers (e.g., rounds-0- to rounds-1-)
+                const regex = new RegExp(`rounds-(\\d+)-`, 'g');
+                newRow.innerHTML = newRow.innerHTML.replace(regex, `rounds-${formCount}-`);
+                
+                // Reset values
+                newRow.querySelectorAll('input, select').forEach(input => {
+                    input.value = '';
+                    if(input.type === 'checkbox') input.checked = false;
+                });
+                
+                // Update Visual Number
+                newRow.querySelector('.round-number').innerText = `#${formCount + 1}`;
+                
+                // Show the row (in case we are cloning a hidden deleted row)
+                newRow.style.display = 'flex'; 
+
+                // Append and increment count
+                container.appendChild(newRow);
+                totalForms.value = formCount + 1;
+                
+                // Re-attach delete listener to new row
+                attachDeleteListener(newRow);
+            });
+
+            // Logic to Remove Round
+            function attachDeleteListener(row) {
+                const deleteBtn = row.querySelector('.delete-round');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function() {
+                        const deleteInput = row.querySelector('input[name$="-DELETE"]');
+                        if(deleteInput) {
+                            deleteInput.checked = true; // Mark as deleted for Django
+                            row.style.display = 'none'; // Hide visual row
+                        }
+                    });
+                }
+            }
+
+            // Attach listeners to initial rows
+            document.querySelectorAll('.round-row').forEach(row => attachDeleteListener(row));
+        });
+    </script>
+</body>
+</html>
