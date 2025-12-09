@@ -24,9 +24,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-rf^i_@h*%*-6bz7n5djy8
 DEBUG = 'RENDER' not in os.environ
 
 ALLOWED_HOSTS = [
-    '127.0.0.1', 
-    'localhost', 
-    '.onrender.com' # Render domain allow karein
+   "*"
 ]
 
 
