@@ -1,0 +1,440 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GD Batch Evaluation - {{ job.title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Professional Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Input Styling */
+        .table-input {
+            width: 100%;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            text-align: center;
+            padding: 6px 4px;
+            transition: all 0.2s ease;
+            font-variant-numeric: tabular-nums;
+        }
+        .table-input:focus {
+            background-color: white;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            outline: none;
+        }
+
+        /* Sticky Header */
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #f8fafc;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* Custom Dropdown Styling */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 50;
+            display: none;
+            margin-top: 4px;
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background-color: #f8fafc; color: #4f46e5; }
+        
+        /* Valid Selection State */
+        .valid-candidate {
+            border-color: #22c55e !important;
+            background-color: #f0fdf4 !important;
+            color: #15803d;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        {% include 'partials/sidebar.html' %} 
+
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+            
+            {% include 'partials/header.html' with page_title="Batch Evaluation" job_title=job.title %}
+
+            <main class="flex-1 overflow-hidden p-6 flex flex-col">
+                
+                <form method="POST" id="gdForm" class="flex flex-col h-full max-w-full mx-auto w-full">
+                    {% csrf_token %}
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5 shrink-0">
+                        <div class="flex flex-col lg:flex-row justify-between gap-6">
+                            
+                            <div class="flex-1">
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Session Topic</label>
+                                <input type="text" name="gd_topic" required 
+                                       class="w-full text-xl font-semibold text-slate-800 border-b-2 border-slate-200 focus:border-indigo-600 outline-none pb-2 placeholder-slate-300 bg-transparent transition-colors" 
+                                       placeholder="Enter GD Topic (e.g. AI in Recruitment)...">
+                            </div>
+
+                            <div class="flex flex-wrap gap-4 items-center self-end">
+                                <div class="px-4 py-2 bg-slate-100 rounded-lg text-sm border border-slate-200">
+                                    <span class="text-slate-500 block text-xs">Evaluator</span>
+                                    <span class="font-bold text-slate-700">{{ request.user.get_full_name|default:request.user.username }}</span>
+                                </div>
+                                <div class="px-4 py-2 bg-slate-100 rounded-lg text-sm border border-slate-200">
+                                    <span class="text-slate-500 block text-xs">Date</span>
+                                    <span class="font-bold text-slate-700">{% now "d M Y" %}</span>
+                                </div>
+                                <div class="px-4 py-2 bg-indigo-50 rounded-lg text-sm border border-indigo-100">
+                                    <span class="text-indigo-500 block text-xs">Batch Count</span>
+                                    <span class="font-bold text-indigo-700" id="batchCountDisplay">0</span>
+                                    <span class="text-xs text-indigo-400 ml-1">/ 10</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3 overflow-x-auto">
+                            <span class="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Criteria:</span>
+                            {% if parameters %}
+                                {% for param in parameters %}
+                                    <span class="px-2 py-1 bg-white border border-slate-200 rounded text-xs font-medium text-slate-600 shadow-sm whitespace-nowrap">
+                                        {{ param.name }} <span class="text-indigo-600 font-bold">({{ param.weightage }})</span>
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                {% for p in default_params %}
+                                    <span class="px-2 py-1 bg-white border border-slate-200 rounded text-xs font-medium text-slate-600 shadow-sm whitespace-nowrap">{{ p }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col flex-1 overflow-hidden relative">
+                        
+                        <div class="overflow-auto custom-scrollbar flex-1" id="tableContainer">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                                    <tr>
+                                        <th class="p-4 w-12 text-center border-b border-slate-200 bg-slate-50">#</th>
+                                        <th class="p-4 w-72 border-b border-r border-slate-200 bg-slate-50">Candidate Name</th>
+                                        
+                                        {% if parameters %}
+                                            {% for param in parameters %}
+                                                <th class="p-2 text-center w-28 border-b border-r border-slate-200 bg-slate-50">{{ param.name }}</th>
+                                            {% endfor %}
+                                        {% else %}
+                                            {% for p in default_params %}
+                                                <th class="p-2 text-center w-28 border-b border-r border-slate-200 bg-slate-50">{{ p }}</th>
+                                            {% endfor %}
+                                        {% endif %}
+
+                                        <th class="p-2 text-center w-24 border-b border-r border-slate-200 bg-slate-100 text-slate-800">Total</th>
+                                        <th class="p-4 border-b border-slate-200 bg-slate-50">Remarks</th>
+                                        <th class="p-2 w-12 border-b border-slate-200 bg-slate-50"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody" class="divide-y divide-slate-100">
+                                    </tbody>
+                            </table>
+                        </div>
+
+                        <div class="bg-slate-50 border-t border-slate-200 p-4 flex justify-between items-center shrink-0 z-30">
+                            <button type="button" onclick="addRow()" 
+                                    class="flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 font-semibold transition shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Row
+                            </button>
+
+                            <div class="flex gap-3">
+                                <a href="{% url 'candidate_list' job_pk=job.pk %}" class="px-6 py-2.5 rounded-lg text-slate-600 font-medium hover:bg-slate-200 transition">
+                                    Cancel
+                                </a>
+                                <button type="submit" 
+                                        class="px-8 py-2.5 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 shadow-lg transform active:scale-95 transition flex items-center gap-2">
+                                    <span>Submit Evaluation</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const CANDIDATE_DATA = [
+            {% for cand in eligible_candidates %}
+            {
+                id: "{{ cand.id }}",
+                name: "{{ cand.test_registration.name|escapejs }}",
+                score: "{{ cand.test_registration.score|default:0 }}"
+            },
+            {% endfor %}
+        ];
+
+        const PARAM_KEYS = [
+            {% if parameters %}
+                {% for param in parameters %}"{{ param.id }}",{% endfor %}
+            {% else %}
+                {% for p in default_params %}"{{ forloop.counter }}",{% endfor %}
+            {% endif %}
+        ];
+    </script>
+
+    <script>
+        // --- 1. CORE LOGIC ---
+        const MAX_ROWS = 10;
+        const MIN_SCORE = 0;
+        const MAX_SCORE = 10;
+
+        function addRow() {
+            // 🛑 CHECK ROW LIMIT
+            const currentRows = document.querySelectorAll('#tableBody tr').length;
+            if(currentRows >= MAX_ROWS) {
+                alert("Maximum batch size is 10 candidates!");
+                return;
+            }
+
+            const tbody = document.getElementById('tableBody');
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition-colors group bg-white";
+            
+            // Build Score Cells with LIMITS
+            let paramCells = '';
+            PARAM_KEYS.forEach(key => {
+                paramCells += `
+                    <td class="p-1 border-r border-slate-100">
+                        <input type="number" 
+                               name="score_TEMP_${key}" 
+                               class="table-input score-input font-mono text-slate-600 font-medium" 
+                               min="${MIN_SCORE}" max="${MAX_SCORE}" 
+                               oninput="validateAndCalculate(this)"
+                               placeholder="-">
+                    </td>
+                `;
+            });
+
+            tr.innerHTML = `
+                <td class="p-4 text-center font-bold text-slate-400 text-sm row-number"></td>
+                
+                <td class="p-2 border-r border-slate-100 relative">
+                    <input type="text" 
+                           class="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors search-input"
+                           placeholder="Type to search..."
+                           autocomplete="off">
+                    
+                    <input type="hidden" name="candidate_ids[]" class="candidate-id-hidden">
+                    
+                    <ul class="suggestions-list custom-scrollbar"></ul>
+                </td>
+
+                ${paramCells}
+                
+                <td class="p-2 text-center font-bold bg-slate-50 text-indigo-700 border-r border-slate-200 row-total text-lg">0</td>
+                <td class="p-2">
+                    <input type="text" name="comments[]" class="table-input text-left px-3 text-sm text-slate-600" placeholder="Observation...">
+                </td>
+                <td class="p-2 text-center">
+                    <button type="button" onclick="removeRow(this)" class="text-slate-300 hover:text-red-500 transition p-2 rounded-full hover:bg-red-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+            setupAutocomplete(tr);
+            updateRowNumbers();
+
+            // Scroll to bottom
+            const container = document.getElementById('tableContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeRow(btn) {
+            btn.closest('tr').remove();
+            updateRowNumbers(); 
+        }
+
+        function updateRowNumbers() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach((row, index) => {
+                row.querySelector('.row-number').textContent = index + 1;
+            });
+            document.getElementById('batchCountDisplay').textContent = rows.length;
+        }
+
+        // --- 2. AUTOCOMPLETE LOGIC ---
+
+        function setupAutocomplete(row) {
+            const input = row.querySelector('.search-input');
+            const hiddenId = row.querySelector('.candidate-id-hidden');
+            const list = row.querySelector('.suggestions-list');
+
+            input.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                
+                if(hiddenId.value) {
+                     hiddenId.value = "";
+                     this.classList.remove('valid-candidate');
+                }
+
+                if(query.length < 1) {
+                    list.style.display = 'none';
+                    return;
+                }
+
+                const selectedIds = Array.from(document.querySelectorAll('.candidate-id-hidden'))
+                                         .map(el => el.value)
+                                         .filter(id => id !== "");
+
+                const matches = CANDIDATE_DATA.filter(c => 
+                    (c.name.toLowerCase().includes(query)) && 
+                    !selectedIds.includes(c.id)
+                );
+
+                renderSuggestions(matches, list, input, hiddenId, row);
+            });
+
+            input.addEventListener('focus', function() {
+                 if(this.value.trim() === "") {
+                    const selectedIds = Array.from(document.querySelectorAll('.candidate-id-hidden'))
+                                         .map(el => el.value)
+                                         .filter(id => id !== "");
+                    
+                    const available = CANDIDATE_DATA.filter(c => !selectedIds.includes(c.id));
+                    renderSuggestions(available, list, input, hiddenId, row);
+                 }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !list.contains(e.target)) {
+                    list.style.display = 'none';
+                    if(!hiddenId.value) input.value = "";
+                }
+            });
+        }
+
+        function renderSuggestions(matches, list, input, hiddenId, row) {
+            list.innerHTML = '';
+            if (matches.length === 0) {
+                list.style.display = 'none';
+                return;
+            }
+
+            matches.forEach(c => {
+                const li = document.createElement('li');
+                li.className = 'suggestion-item';
+                li.innerHTML = `
+                    <span class="font-medium">${c.name}</span>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">Score: ${c.score}</span>
+                `;
+                
+                li.onclick = () => {
+                    input.value = c.name;
+                    hiddenId.value = c.id;
+                    input.classList.add('valid-candidate');
+                    updateBackendInputNames(c.id, row);
+                    list.style.display = 'none';
+                };
+                list.appendChild(li);
+            });
+            list.style.display = 'block';
+        }
+
+        function updateBackendInputNames(candidateId, row) {
+            const inputs = row.querySelectorAll('.score-input');
+            let paramIndex = 0;
+            inputs.forEach(input => {
+                const pKey = PARAM_KEYS[paramIndex];
+                input.name = `score_${candidateId}_${pKey}`;
+                paramIndex++;
+            });
+        }
+
+        // --- 3. SCORING LOGIC WITH VALIDATION (0-10) ---
+
+        function validateAndCalculate(input) {
+            let val = parseInt(input.value);
+            
+            // 🛑 Strict 0-10 Limit Logic
+            if (val > MAX_SCORE) {
+                input.value = MAX_SCORE;
+            } else if (val < MIN_SCORE) {
+                input.value = MIN_SCORE;
+            }
+            
+            // Recalculate total after correction
+            calculateRowTotal(input);
+        }
+
+        function calculateRowTotal(input) {
+            const row = input.closest('tr');
+            const inputs = row.querySelectorAll('.score-input');
+            let total = 0;
+            inputs.forEach(inp => {
+                const val = parseInt(inp.value);
+                if (!isNaN(val)) total += val;
+            });
+            
+            const totalEl = row.querySelector('.row-total');
+            totalEl.textContent = total;
+            
+            // Adjusted color logic for 0-10 scale (assuming ~4 params = 40 max)
+            // Green if > 30, Indigo if > 15
+            totalEl.className = `p-2 text-center font-bold bg-slate-50 border-r border-slate-200 row-total text-lg ${
+                total >= 30 ? 'text-green-600' : (total >= 15 ? 'text-indigo-600' : 'text-red-500')
+            }`;
+        }
+
+        // Init: Add 3 rows
+        window.onload = function() {
+            for(let i=0; i<3; i++) addRow();
+        }
+
+    </script>
+</body>
+</html>

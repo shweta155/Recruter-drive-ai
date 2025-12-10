@@ -16,7 +16,8 @@ from .views import (
     EvaluationTemplateListView,
     EvaluationTemplateCreateView,
     RoundMasterListView,
-    RoundMasterCreateView
+    RoundMasterCreateView,
+    BatchGDEvaluationView
 )
 
 
@@ -41,5 +42,6 @@ urlpatterns = [
     path('rounds/create/', RoundMasterCreateView.as_view(), name='round_master_create'),
     path('jobs/<int:pk>/delete/', views.JobPostDeleteView.as_view(), name='job_delete'),
     path('api/update-job-status/', views.update_job_status_ajax, name='update_job_status_ajax'),
+    path('job/<int:job_pk>/gd-evaluation/', BatchGDEvaluationView.as_view(), name='gd_batch_evaluation'),
     
 ]

@@ -581,12 +581,121 @@ def update_job_status_ajax(request):
 
 
 
+# ... existing imports ...
+from django.views import View # Make sure View is imported
+
+# ==========================================
+# 1. NEW VIEW: BATCH GD EVALUATION
+# ==========================================
+class BatchGDEvaluationView(LoginRequiredMixin, View):
+    template_name = 'partials/recruiter/gd_evaluation_form.html'
+
+    def get(self, request, job_pk):
+        job = get_object_or_404(JobPost, pk=job_pk)
+        
+        # 1. Fetch Candidates valid for GD (Round must match exactly)
+        eligible_candidates = Candidate.objects.filter(
+            job_post=job, 
+            current_round='GD Round' # Or just 'GD' depending on your choices
+        ).exclude(feedbacks__round_name='GD Round') # Exclude if already evaluated
+
+        # 2. Fetch Evaluation Parameters for GD
+        # Find the JobRound config to get the template
+        job_round = JobRound.objects.filter(
+            job_post=job, 
+            round_master__round_type='GD Round'
+        ).first()
+
+        parameters = []
+        if job_round and job_round.round_master.evaluation_template:
+            parameters = job_round.round_master.evaluation_template.parameters.all()
+        
+        # Default params if no template is linked
+        default_params = ['Communication', 'Leadership', 'Listening', 'Content']
+
+        context = {
+            'job': job,
+            'eligible_candidates': eligible_candidates,
+            'parameters': parameters,
+            'default_params': default_params
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, job_pk):
+        job = get_object_or_404(JobPost, pk=job_pk)
+        
+        # Get list of selected candidate IDs from the form
+        candidate_ids = request.POST.getlist('candidate_ids[]')
+        comments = request.POST.getlist('comments[]')
+        
+        # Fetch parameters again to build dynamic keys
+        job_round = JobRound.objects.filter(job_post=job, round_master__round_type='GD Round').first()
+        parameters = []
+        if job_round and job_round.round_master.evaluation_template:
+            parameters = job_round.round_master.evaluation_template.parameters.all()
+
+        saved_count = 0
+
+        try:
+            with transaction.atomic():
+                for index, cid in enumerate(candidate_ids):
+                    if not cid: continue # Skip empty rows
+
+                    candidate = Candidate.objects.get(pk=cid)
+                    
+                    # Calculate Score dynamically based on form naming convention: score_{candID}_{paramID}
+                    total_score = 0
+                    
+                    if parameters:
+                        for param in parameters:
+                            key = f"score_{cid}_{param.id}"
+                            val = request.POST.get(key, 0)
+                            total_score += int(val) if val else 0
+                    else:
+                        # Handle default params (1,2,3,4) hardcoded in your JS
+                        for i in range(1, 5):
+                            key = f"score_{cid}_{i}"
+                            val = request.POST.get(key, 0)
+                            total_score += int(val) if val else 0
+
+                    # Save Feedback
+                    RoundFeedback.objects.create(
+                        candidate=candidate,
+                        job_post=job,
+                        round_name='GD Round',
+                        interviewer=request.user,
+                        score=total_score,
+                        comments=comments[index] if index < len(comments) else "",
+                        recommendation='Pass' # Default for GD, can be changed later
+                    )
+                    
+                    saved_count += 1
+            
+            messages.success(request, f"Successfully evaluated {saved_count} candidates in GD Batch.")
+            return redirect('candidate_list', job_pk=job.pk)
+
+        except Exception as e:
+            messages.error(request, f"Error saving batch: {e}")
+            return redirect('gd_batch_evaluation', job_pk=job_pk)
+
 
 class FeedbackCreateView(LoginRequiredMixin, CreateView):
     model = RoundFeedback
     form_class = RoundFeedbackForm
     template_name = 'partials/recruiter/feedback_form.html'
 
+# --- 🛑 ADD THIS METHOD TO INTERCEPT GD ROUND ---
+    def get(self, request, *args, **kwargs):
+        candidate_id = request.GET.get('candidate_id')
+        if candidate_id:
+            candidate = get_object_or_404(Candidate, pk=candidate_id)
+            
+            # CHECK: If round is GD, redirect to the new Batch Form
+            if candidate.current_round == 'GD Round':
+                return redirect('gd_batch_evaluation', job_pk=candidate.job_post.pk)
+        
+        return super().get(request, *args, **kwargs)
+    # ------------------------------------------------
     # --- 🛑 YE FUNCTION ADD KAREIN (Fix for ImproperlyConfigured) ---
     def get_success_url(self):
         job_pk = self.object.candidate.job_post.pk
@@ -701,7 +810,7 @@ class FeedbackCreateView(LoginRequiredMixin, CreateView):
 
         except IntegrityError:
              messages.error(self.request, "Feedback already exists for this round.")
-             return self.form_invalid(form)
+             return super().form_valid(form)
 
 @login_required 
 def move_candidate_round(request, pk, round_name):
