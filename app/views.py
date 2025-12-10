@@ -3,6 +3,7 @@
 import json
 from openai import OpenAI  
 import re
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 import google.generativeai as genai
 from django.contrib.auth import login, logout
@@ -97,7 +98,8 @@ def user_register(request):
     return render(request, "registration/register.html", context)
 
 
-@login_required
+@login_required(login_url='/')
+
 def dashboard(request):
     status_filter = request.GET.get("status", "all")
     experience_filter = request.GET.get("experience", "all")
