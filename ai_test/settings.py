@@ -1,135 +1,43 @@
-"""
-Django settings for ai_test project.
-"""
-
-from pathlib import Path
 import os
-import environ
-import dj_database_url # Database connection ke liye
+import dj_database_url
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# -------------------------------
+# DEBUG & ALLOWED_HOSTS
+# -------------------------------
 
-# Env variables read karne ke liye setup
-env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+# Use environment variable DEBUG, default False for safety
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-# Quick-start development settings - unsuitable for production
-# SECURITY WARNING: keep the secret key used in production secret!
-# Production me SECRET_KEY environment variable se ayega, warna default use hoga
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-rf^i_@h*%*-6bz7n5djy8d2r26z+e!y-s4=h2g83pv=uptw)gk")
+# Allowed hosts for Render deployment
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+# Example: ALLOWED_HOSTS="recruter-drive-ai.onrender.com,localhost"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# Render par DEBUG False hona chahiye
-DEBUG = 'RENDER' not in os.environ
+# -------------------------------
+# DATABASE CONFIGURATION
+# -------------------------------
 
-ALLOWED_HOSTS = [
-   "*"
-]
-
-
-# Application definition
-
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "app",
-    "user_tests",
-    "widget_tweaks",
-    'recruitment',
-]
-
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware", # <-- ADDED: Static files serve karne ke liye
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-ROOT_URLCONF = "ai_test.urls"
-
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "templates")],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = "ai_test.wsgi.application"
-
-# --- EMAIL SETTINGS ---
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "shweta.ladne.averybit@gmail.com"
-EMAIL_HOST_PASSWORD = "qwgh jagp euzh qcwi"
-
-# ----------------------------------------------------------------------
-#                         DATABASE CONFIGURATION
-# ----------------------------------------------------------------------
-
-# Render par PostgreSQL aur Local par default (PostgreSQL/SQLite)
 DATABASES = {
-    'default': dj_database_url.config(
-        # Render automatic DATABASE_URL set karta hai, hum use yahan fetch kar rahe hain
-        default='postgresql://postgres:12345@localhost:5432/Recruitment',
-        conn_max_age=600
+    "default": dj_database_url.config(
+        default=os.environ.get(
+            "DATABASE_URL",
+            "postgresql://postgres:12345@localhost:5432/Recruitment"
+        ),
+        conn_max_age=600,
+        ssl_require=True  # Render PostgreSQL needs SSL
     )
 }
 
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    { "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator" },
-    { "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator" },
-    { "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator" },
-    { "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator" },
-]
-
-# API Keys
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", env("GEMINI_API_KEY", default=""))
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", env("OPENAI_API_KEY", default=""))
-
-# Internationalization
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = True
-
-# ----------------------------------------------------------------------
-#                         STATIC & MEDIA FILES
-# ----------------------------------------------------------------------
+# -------------------------------
+# STATIC & MEDIA (Render ready)
+# -------------------------------
 
 STATIC_URL = "/static/"
-
-# Production me static files yahan collect honge
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-# Enable WhiteNoise storage for compression and caching
+# Enable WhiteNoise storage for compression & caching
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
